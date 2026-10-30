@@ -3,6 +3,7 @@ import { KartGame } from './games/kartGame.js';
 import { BombGame } from './games/bombGame.js';
 import { TankGame } from './games/tankGame.js';
 import { GamepadMode } from './games/gamepadMode.js';
+import { SnesEmulator } from './games/snesEmulator.js';
 
 class AirConsoleHost {
   constructor() {
@@ -320,6 +321,9 @@ class AirConsoleHost {
       if (!this.players[2]) {
         this.activeGame.p2IsBot = true;
       }
+    } else if (this.currentGameType === 'snes') {
+      if (titleEl) titleEl.textContent = '🕹️ SUPER FAMICOM / SNES CONSOLE (.SFC)';
+      this.activeGame = new SnesEmulator(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
     } else {
       if (titleEl) titleEl.textContent = '🎮 UNIVERSAL PC GAMEPAD MODE';
       this.activeGame = new GamepadMode(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);

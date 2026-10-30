@@ -19,6 +19,8 @@ class MobileGamepad {
       btnY: false,
       btnL: false,
       btnR: false,
+      select: false,
+      start: false,
       tiltX: 0,
       tiltY: 0
     };
@@ -62,6 +64,8 @@ class MobileGamepad {
     this.btnY = document.getElementById('btn-y');
     this.btnL1 = document.getElementById('btn-l1');
     this.btnR1 = document.getElementById('btn-r1');
+    this.btnSelect = document.getElementById('btn-select');
+    this.btnStart = document.getElementById('btn-start');
 
     this.gyroToggleBtn = document.getElementById('gyro-toggle-btn');
     this.fullscreenBtn = document.getElementById('fullscreen-btn');
@@ -344,6 +348,8 @@ class MobileGamepad {
     bindBtn(this.btnY, 'btnY', 25);
     bindBtn(this.btnL1, 'btnL', 30);
     bindBtn(this.btnR1, 'btnR', 30);
+    bindBtn(this.btnSelect, 'select', 25);
+    bindBtn(this.btnStart, 'start', 25);
   }
 
   toggleGyro() {
@@ -399,6 +405,8 @@ class MobileGamepad {
       btnY: this.input.btnY,
       btnL: this.input.btnL,
       btnR: this.input.btnR,
+      select: this.input.select,
+      start: this.input.start,
       // Compatibility aliases
       fire: this.input.btnA,
       boost: this.input.btnB || this.input.btnY,
