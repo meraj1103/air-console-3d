@@ -25,8 +25,11 @@ class MobileGamepad {
       tiltY: 0
     };
 
-    // Gyroscope toggle
+    // Gyroscope toggle & calibration state
     this.gyroEnabled = false;
+    this.gyroCenterOffset = 0;
+    this.gyroNormalizedSteer = 0;
+    this.lastRawAngle = 0;
 
     // Joystick touch tracking
     this.stickTouchId = null;
@@ -68,6 +71,13 @@ class MobileGamepad {
     this.btnStart = document.getElementById('btn-start');
 
     this.gyroToggleBtn = document.getElementById('gyro-toggle-btn');
+    this.gyroStatusLabel = document.getElementById('gyro-status-label');
+    this.gyroCalibrateBtn = document.getElementById('gyro-calibrate-btn');
+    this.gyroSteeringHud = document.getElementById('gyro-steering-hud');
+    this.gyroWheelGraphic = document.getElementById('gyro-wheel-graphic');
+    this.gyroAngleDisplay = document.getElementById('gyro-angle-display');
+    this.joystickAmbientGuide = document.getElementById('joystick-ambient-guide');
+
     this.fullscreenBtn = document.getElementById('fullscreen-btn');
     this.rematchModal = document.getElementById('mobile-rematch-modal');
   }
@@ -114,6 +124,10 @@ class MobileGamepad {
 
     this.gyroToggleBtn?.addEventListener('click', () => {
       this.toggleGyro();
+    });
+
+    this.gyroCalibrateBtn?.addEventListener('click', () => {
+      this.calibrateGyro();
     });
 
     document.getElementById('mobile-rematch-btn')?.addEventListener('click', () => {
@@ -373,8 +387,17 @@ class MobileGamepad {
     if (!this.gyroEnabled) {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-          .then(res => { if (res === 'granted') this.enableGyro(); })
-          .catch(console.error);
+          .then(res => {
+            if (res === 'granted') {
+              this.enableGyro();
+            } else {
+              alert('Motion/Gyroscope permission was denied. Please allow motion sensors in browser settings.');
+            }
+          })
+          .catch((err) => {
+            console.warn('DeviceOrientation permission catch:', err);
+            this.enableGyro();
+          });
       } else {
         this.enableGyro();
       }
@@ -385,15 +408,22 @@ class MobileGamepad {
 
   enableGyro() {
     this.gyroEnabled = true;
-    this.gyroToggleBtn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400');
-    this.gyroToggleBtn.textContent = '🧭 TILT: ON';
+    this.gyroCenterOffset = 0;
+    this.gyroNormalizedSteer = 0;
+
+    if (this.gyroToggleBtn) {
+      this.gyroToggleBtn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
+      this.gyroToggleBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border-white/20');
+    }
+    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'GYRO: ON';
+    if (this.gyroCalibrateBtn) this.gyroCalibrateBtn.classList.remove('hidden');
+    if (this.gyroSteeringHud) this.gyroSteeringHud.classList.remove('hidden');
+    if (this.joystickAmbientGuide) this.joystickAmbientGuide.classList.add('hidden');
+
+    this.triggerHaptic([40, 20, 60]);
 
     this.gyroHandler = (e) => {
-      const gamma = e.gamma || 0;
-      const beta = (e.beta || 0) - 30;
-      this.input.tiltX = gamma;
-      this.input.tiltY = beta;
-      this.sendInput();
+      this.handleOrientation(e);
     };
 
     window.addEventListener('deviceorientation', this.gyroHandler);
@@ -401,8 +431,17 @@ class MobileGamepad {
 
   disableGyro() {
     this.gyroEnabled = false;
-    this.gyroToggleBtn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400');
-    this.gyroToggleBtn.textContent = '🧭 TILT: OFF';
+    this.gyroNormalizedSteer = 0;
+
+    if (this.gyroToggleBtn) {
+      this.gyroToggleBtn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
+      this.gyroToggleBtn.classList.add('bg-slate-900', 'text-slate-300', 'border-white/20');
+    }
+    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'GYRO: OFF';
+    if (this.gyroCalibrateBtn) this.gyroCalibrateBtn.classList.add('hidden');
+    if (this.gyroSteeringHud) this.gyroSteeringHud.classList.add('hidden');
+    if (this.joystickAmbientGuide) this.joystickAmbientGuide.classList.remove('hidden');
+
     if (this.gyroHandler) {
       window.removeEventListener('deviceorientation', this.gyroHandler);
     }
@@ -411,14 +450,77 @@ class MobileGamepad {
     this.sendInput();
   }
 
+  calibrateGyro() {
+    this.gyroCenterOffset = this.lastRawAngle;
+    this.triggerHaptic([30, 30]);
+    if (this.gyroAngleDisplay) {
+      this.gyroAngleDisplay.textContent = '0° [RE-CENTERED]';
+    }
+  }
+
+  handleOrientation(e) {
+    if (!this.gyroEnabled) return;
+
+    // Detect screen orientation (0 = portrait, 90 / -90 = landscape)
+    const orientationAngle = window.screen?.orientation?.angle ?? (window.orientation || 0);
+
+    let rawAngle = 0;
+    if (orientationAngle === 90) {
+      // Landscape (charging port on right)
+      rawAngle = (e.beta || 0);
+    } else if (orientationAngle === -90 || orientationAngle === 270) {
+      // Landscape (charging port on left)
+      rawAngle = -(e.beta || 0);
+    } else if (orientationAngle === 180) {
+      rawAngle = -(e.gamma || 0);
+    } else {
+      // Portrait
+      rawAngle = (e.gamma || 0);
+    }
+
+    this.lastRawAngle = rawAngle;
+    const calibratedAngle = rawAngle - this.gyroCenterOffset;
+
+    // Deadzone (2 deg) & clamp (-30 to +30 deg for full steer)
+    const deadzone = 2.0;
+    let normalizedSteer = 0;
+    if (Math.abs(calibratedAngle) > deadzone) {
+      const sign = Math.sign(calibratedAngle);
+      const mag = (Math.abs(calibratedAngle) - deadzone) / 28;
+      normalizedSteer = sign * Math.min(1.0, Math.max(0, mag));
+    }
+
+    // Pitch forward / backward for tiltY
+    let pitch = 0;
+    if (orientationAngle === 90 || orientationAngle === 270) {
+      pitch = (e.gamma || 0);
+    } else {
+      pitch = (e.beta || 0) - 30;
+    }
+
+    this.input.tiltX = calibratedAngle;
+    this.input.tiltY = pitch;
+    this.gyroNormalizedSteer = normalizedSteer;
+
+    // Smooth UI steering wheel rotation on phone screen
+    if (this.gyroWheelGraphic) {
+      this.gyroWheelGraphic.style.transform = `rotate(${calibratedAngle * 1.6}deg)`;
+    }
+    if (this.gyroAngleDisplay) {
+      const rounded = Math.round(calibratedAngle);
+      const dir = rounded > 2 ? 'RIGHT' : rounded < -2 ? 'LEFT' : 'CENTER';
+      this.gyroAngleDisplay.textContent = `${rounded > 0 ? '+' : ''}${rounded}° [${dir}]`;
+    }
+
+    this.sendInput();
+  }
+
   sendInput() {
     if (!this.isConnected) return;
     let effectiveX = this.input.x;
+    // When gyro is active and touch stick is neutral, steer with gyro!
     if (this.gyroEnabled && Math.abs(effectiveX) < 0.1) {
-      const rawTilt = (this.input.tiltX || 0) / 25;
-      if (Math.abs(rawTilt) > 0.12) {
-        effectiveX = Math.max(-1, Math.min(1, rawTilt));
-      }
+      effectiveX = this.gyroNormalizedSteer;
     }
 
     this.socket.emit('controller-input', {

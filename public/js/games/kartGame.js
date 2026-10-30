@@ -509,8 +509,13 @@ export class KartGame {
     const k = this.karts[playerNumber];
     if (!k) return;
 
+    let steer = input.x !== undefined ? input.x : (input.steer || 0);
+    if (Math.abs(steer) < 0.05 && typeof input.tiltX === 'number' && Math.abs(input.tiltX) > 2) {
+      steer = Math.max(-1, Math.min(1, input.tiltX / 28));
+    }
+
     k.input = {
-      steer: input.x !== undefined ? input.x : (input.steer || 0),
+      steer: steer,
       accel: !!(input.fire || input.accel || input.btnA),
       brake: !!(input.brake || input.btnB),
       drift: !!(input.boost || input.drift || input.btnX),

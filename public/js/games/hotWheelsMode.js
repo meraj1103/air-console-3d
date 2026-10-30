@@ -62,7 +62,10 @@ export class HotWheelsMode {
           <div class="cyber-card p-6 rounded-3xl border-2 border-cyan-400/50 bg-slate-900/80 flex flex-col items-center shadow-[0_0_30px_rgba(0,240,255,0.25)]">
             <div class="flex items-center justify-between w-full mb-3">
               <span class="font-orbitron text-xs font-black text-cyan-400 tracking-wider">PLAYER 1 [BLUE RACER]</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">SPLIT-SCREEN P1</span>
+              <div class="flex items-center gap-2">
+                <span id="hw-p1-gyro-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-400 text-slate-950 font-black shadow-[0_0_10px_#00f0ff] animate-pulse">🧭 GYRO: 0°</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">SPLIT-SCREEN P1</span>
+              </div>
             </div>
 
             <!-- Virtual Steering Wheel & Pedals Gauge -->
@@ -102,7 +105,10 @@ export class HotWheelsMode {
           <div class="cyber-card p-6 rounded-3xl border-2 border-pink-500/50 bg-slate-900/80 flex flex-col items-center shadow-[0_0_30px_rgba(255,0,85,0.25)]">
             <div class="flex items-center justify-between w-full mb-3">
               <span class="font-orbitron text-xs font-black text-pink-400 tracking-wider">PLAYER 2 [RED RACER]</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300 border border-pink-400/40">SPLIT-SCREEN P2</span>
+              <div class="flex items-center gap-2">
+                <span id="hw-p2-gyro-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500 text-white font-black shadow-[0_0_10px_#ff0055] animate-pulse">🧭 GYRO: 0°</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300 border border-pink-400/40">SPLIT-SCREEN P2</span>
+              </div>
             </div>
 
             <!-- Virtual Steering Wheel & Pedals Gauge -->
@@ -168,8 +174,18 @@ export class HotWheelsMode {
     let steer = 0;
     if (typeof input.x === 'number' && Math.abs(input.x) > 0.05) {
       steer = input.x;
-    } else if (typeof input.tiltX === 'number' && Math.abs(input.tiltX) > 4) {
-      steer = Math.max(-1, Math.min(1, input.tiltX / 25));
+    } else if (typeof input.tiltX === 'number' && Math.abs(input.tiltX) > 2) {
+      steer = Math.max(-1, Math.min(1, input.tiltX / 28));
+    }
+
+    // Update live gyro badge if active
+    const gyroBadge = document.getElementById(`hw-p${playerNumber}-gyro-badge`);
+    if (gyroBadge) {
+      if (typeof input.tiltX === 'number' && Math.abs(input.tiltX) > 1.5) {
+        gyroBadge.classList.remove('hidden');
+        const deg = Math.round(input.tiltX);
+        gyroBadge.textContent = `🧭 GYRO: ${deg > 0 ? '+' : ''}${deg}°`;
+      }
     }
 
     const steerLeft = steer < -0.25;
