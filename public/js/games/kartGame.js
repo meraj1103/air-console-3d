@@ -16,6 +16,7 @@ export class KartGame {
     this.totalLaps = 3;
     this.raceActive = false;
     this.countdown = 3;
+    this.lastTime = performance.now();
 
     this.karts = {};
     this.items = [];
@@ -23,6 +24,7 @@ export class KartGame {
     this.particles = [];
     this.skidMarks = [];
     this.boostPads = [];
+    this.trackSamples = [];
 
     // Track Waypoints (Loop circuit)
     this.trackWaypoints = [
@@ -104,6 +106,9 @@ export class KartGame {
     this.trackCurve = new THREE.CatmullRomCurve3(curvePoints);
     this.trackCurve.closed = true;
 
+    // Pre-sample spline points for fast closest-point math
+    this.trackSamples = this.trackCurve.getPoints(240);
+
     // Track Surface Mesh
     const trackWidth = 14;
     const segments = 160;
@@ -159,323 +164,275 @@ export class KartGame {
     // Finish Line Arch & Checkerboard
     this.buildFinishLine();
 
-    // Speed Boost Pads & Item Boxes
-    this.buildBoostPads();
-    this.spawnItemBoxes();
+    // Place Boost Pads & Item Boxes
+    this.placeTrackPickups();
+  }
+
+  getClosestTrackInfo(x, z) {
+    let minDistSq = Infinity;
+    let closestPt = this.trackSamples[0];
+    let closestIdx = 0;
+
+    for (let i = 0; i < this.trackSamples.length; i++) {
+      const p = this.trackSamples[i];
+      const dSq = (x - p.x) * (x - p.x) + (z - p.z) * (z - p.z);
+      if (dSq < minDistSq) {
+        minDistSq = dSq;
+        closestPt = p;
+        closestIdx = i;
+      }
+    }
+
+    const nextIdx = (closestIdx + 1) % this.trackSamples.length;
+    const nextPt = this.trackSamples[nextIdx];
+    const tangent = { x: nextPt.x - closestPt.x, z: nextPt.z - closestPt.z };
+    const forwardAngle = Math.atan2(tangent.x, tangent.z);
+
+    return {
+      point: closestPt,
+      distance: Math.sqrt(minDistSq),
+      forwardAngle
+    };
   }
 
   buildNeonRails() {
     const segments = 120;
-    const pts = this.trackCurve.getPoints(segments);
-    const trackWidth = 14;
-
+    const points = this.trackCurve.getPoints(segments);
     const leftRailPts = [];
     const rightRailPts = [];
+    const hw = 7.0;
 
     for (let i = 0; i <= segments; i++) {
-      const p = pts[i % segments];
-      const nextP = pts[(i + 1) % segments];
+      const p = points[i % segments];
+      const nextP = points[(i + 1) % segments];
       const dir = new THREE.Vector3().subVectors(nextP, p).normalize();
-      const normal = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+      const norm = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
 
-      leftRailPts.push(new THREE.Vector3().copy(p).addScaledVector(normal, trackWidth / 2 + 0.6));
-      rightRailPts.push(new THREE.Vector3().copy(p).addScaledVector(normal, -(trackWidth / 2 + 0.6)));
+      leftRailPts.push(new THREE.Vector3().copy(p).addScaledVector(norm, hw).setY(0.4));
+      rightRailPts.push(new THREE.Vector3().copy(p).addScaledVector(norm, -hw).setY(0.4));
     }
 
     const leftCurve = new THREE.CatmullRomCurve3(leftRailPts);
-    const leftTube = new THREE.TubeGeometry(leftCurve, segments, 0.45, 8, true);
-    const leftRailMesh = new THREE.Mesh(leftTube, new THREE.MeshBasicMaterial({ color: 0x00f0ff }));
-    leftRailMesh.position.y = 0.5;
-    this.scene.add(leftRailMesh);
-
     const rightCurve = new THREE.CatmullRomCurve3(rightRailPts);
-    const rightTube = new THREE.TubeGeometry(rightCurve, segments, 0.45, 8, true);
-    const rightRailMesh = new THREE.Mesh(rightTube, new THREE.MeshBasicMaterial({ color: 0xff0055 }));
-    rightRailMesh.position.y = 0.5;
-    this.scene.add(rightRailMesh);
+
+    const railGeoLeft = new THREE.TubeGeometry(leftCurve, 120, 0.35, 8, false);
+    const railGeoRight = new THREE.TubeGeometry(rightCurve, 120, 0.35, 8, false);
+
+    const matLeft = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const matRight = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+
+    this.scene.add(new THREE.Mesh(railGeoLeft, matLeft));
+    this.scene.add(new THREE.Mesh(railGeoRight, matRight));
   }
 
   buildFinishLine() {
-    // Arch over the track start
     const archGroup = new THREE.Group();
-    archGroup.position.set(-35, 0, 25);
+    const p = this.trackWaypoints[0];
 
-    // Left Pillar
-    const leftCol = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 9, 1.6),
-      new THREE.MeshStandardMaterial({ color: 0x111625, metalness: 0.9, roughness: 0.2 })
-    );
-    leftCol.position.set(-8.5, 4.5, 0);
-    archGroup.add(leftCol);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x1f293d, metalness: 0.8, roughness: 0.2 });
+    const postGeo = new THREE.CylinderGeometry(0.6, 0.6, 12, 16);
 
-    // Right Pillar
-    const rightCol = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 9, 1.6),
-      new THREE.MeshStandardMaterial({ color: 0x111625, metalness: 0.9, roughness: 0.2 })
-    );
-    rightCol.position.set(8.5, 4.5, 0);
-    archGroup.add(rightCol);
+    const postL = new THREE.Mesh(postGeo, postMat);
+    postL.position.set(-8.5, 6, 0);
+    archGroup.add(postL);
 
-    // Top Beam with glowing Neon Sign
-    const beam = new THREE.Mesh(
-      new THREE.BoxGeometry(18.6, 1.8, 2.0),
-      new THREE.MeshStandardMaterial({ color: 0x090f1d, emissive: 0x00f0ff, emissiveIntensity: 0.4 })
-    );
-    beam.position.set(0, 9, 0);
-    archGroup.add(beam);
+    const postR = new THREE.Mesh(postGeo, postMat);
+    postR.position.set(8.5, 6, 0);
+    archGroup.add(postR);
 
-    // Holographic Banner
-    const bannerGeo = new THREE.PlaneGeometry(12, 1.5);
-    const bannerMat = new THREE.MeshBasicMaterial({ color: 0xffe600, side: THREE.DoubleSide });
-    const banner = new THREE.Mesh(bannerGeo, bannerMat);
-    banner.position.set(0, 8.8, 1.05);
-    archGroup.add(banner);
+    // Crossbar
+    const barGeo = new THREE.BoxGeometry(18, 1.6, 1.6);
+    const barMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0xffe600, emissiveIntensity: 0.5 });
+    const bar = new THREE.Mesh(barGeo, barMat);
+    bar.position.set(0, 11, 0);
+    archGroup.add(bar);
 
+    archGroup.position.set(p.x, 0, p.z);
+    archGroup.rotation.y = Math.PI / 2;
     this.scene.add(archGroup);
   }
 
-  buildBoostPads() {
-    const padLocations = [
-      { t: 0.22, color: 0xffe600 },
-      { t: 0.55, color: 0x00ff88 },
-      { t: 0.82, color: 0xff0055 }
+  placeTrackPickups() {
+    // Boost Pads
+    const boostLocs = [
+      { x: -30, z: 25 },
+      { x: 45, z: 20 },
+      { x: 15, z: -30 },
+      { x: -35, z: -30 }
     ];
 
-    padLocations.forEach(pad => {
-      const pos = this.trackCurve.getPointAt(pad.t);
-      const tangent = this.trackCurve.getTangentAt(pad.t);
-
-      const geo = new THREE.PlaneGeometry(6, 4);
-      const mat = new THREE.MeshBasicMaterial({
-        color: pad.color,
-        side: THREE.DoubleSide,
+    boostLocs.forEach(loc => {
+      const padGeo = new THREE.PlaneGeometry(6, 4);
+      const padMat = new THREE.MeshBasicMaterial({
+        color: 0x00ff88,
         transparent: true,
         opacity: 0.85
       });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(pos.x, 0.1, pos.z);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.rotation.z = Math.atan2(tangent.x, tangent.z);
-
-      this.scene.add(mesh);
-      this.boostPads.push({ pos, mesh, color: pad.color });
+      const pad = new THREE.Mesh(padGeo, padMat);
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(loc.x, 0.1, loc.z);
+      this.scene.add(pad);
+      this.boostPads.push({ pos: loc, mesh: pad });
     });
-  }
 
-  spawnItemBoxes() {
-    const itemT = [0.15, 0.4, 0.7];
-    itemT.forEach(t => {
-      const pos = this.trackCurve.getPointAt(t);
-      [-3.5, 3.5].forEach(offset => {
-        const tangent = this.trackCurve.getTangentAt(t);
-        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-        const p = new THREE.Vector3().copy(pos).addScaledVector(normal, offset);
-
-        const geo = new THREE.BoxGeometry(1.8, 1.8, 1.8);
-        const mat = new THREE.MeshStandardMaterial({
-          color: 0x11192e,
-          emissive: 0x00f0ff,
-          emissiveIntensity: 0.9,
-          roughness: 0.1,
-          metalness: 0.8
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(p.x, 1.6, p.z);
-
-        const wire = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffffff }));
-        mesh.add(wire);
-
-        this.scene.add(mesh);
-        this.items.push({ pos: p, mesh, active: true, respawnTimer: 0 });
-      });
-    });
-  }
-
-  createKartMesh(primaryColorHex, emissiveColorHex) {
-    const kartGroup = new THREE.Group();
-
-    // Aerodynamic Chassis Body
-    const bodyGeo = new THREE.BoxGeometry(2.4, 0.9, 4.4);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x141a29,
-      metalness: 0.85,
-      roughness: 0.2,
-      emissive: emissiveColorHex,
-      emissiveIntensity: 0.4
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.6;
-    body.castShadow = true;
-    kartGroup.add(body);
-
-    // Glowing Neon Center Racing Stripe
-    const stripeGeo = new THREE.BoxGeometry(0.8, 0.95, 4.5);
-    const stripeMat = new THREE.MeshBasicMaterial({ color: primaryColorHex });
-    const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-    stripe.position.y = 0.6;
-    kartGroup.add(stripe);
-
-    // Cockpit & Windshield
-    const canopyGeo = new THREE.CylinderGeometry(0.7, 0.9, 1.6, 8);
-    canopyGeo.rotateX(Math.PI / 4);
-    const canopyMat = new THREE.MeshPhysicalMaterial({
-      color: 0x02050a,
-      roughness: 0.1,
-      metalness: 0.1,
-      clearcoat: 1.0,
-      emissive: primaryColorHex,
-      emissiveIntensity: 0.3
-    });
-    const canopy = new THREE.Mesh(canopyGeo, canopyMat);
-    canopy.position.set(0, 1.15, -0.2);
-    kartGroup.add(canopy);
-
-    // Cyber Rear Spoiler / Wing
-    const spoilerGeo = new THREE.BoxGeometry(3.0, 0.2, 0.8);
-    const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x0d121f, metalness: 0.9, roughness: 0.1 });
-    const spoiler = new THREE.Mesh(spoilerGeo, spoilerMat);
-    spoiler.position.set(0, 1.45, -1.9);
-    kartGroup.add(spoiler);
-
-    // Spoiler Struts
-    const strutMat = new THREE.MeshBasicMaterial({ color: primaryColorHex });
-    const leftStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7), strutMat);
-    leftStrut.position.set(-1.1, 1.1, -1.9);
-    kartGroup.add(leftStrut);
-    const rightStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7), strutMat);
-    rightStrut.position.set(1.1, 1.1, -1.9);
-    kartGroup.add(rightStrut);
-
-    // 4 Neon Cyber Wheels
-    const wheels = [];
-    const wheelPositions = [
-      { x: -1.4, y: 0.5, z: 1.4 },
-      { x: 1.4, y: 0.5, z: 1.4 },
-      { x: -1.4, y: 0.5, z: -1.4 },
-      { x: 1.4, y: 0.5, z: -1.4 }
+    // Mystery Item Boxes
+    const itemLocs = [
+      { x: 0, z: 25 },
+      { x: 50, z: -5 },
+      { x: -10, z: -25 },
+      { x: -45, z: -5 }
     ];
 
-    wheelPositions.forEach(pos => {
-      const wheelGroup = new THREE.Group();
-      wheelGroup.position.set(pos.x, pos.y, pos.z);
+    itemLocs.forEach(loc => {
+      const boxGeo = new THREE.BoxGeometry(2.0, 2.0, 2.0);
+      const boxMat = new THREE.MeshStandardMaterial({
+        color: 0xffe600,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
+        metalness: 0.8
+      });
+      const box = new THREE.Mesh(boxGeo, boxMat);
+      box.position.set(loc.x, 1.5, loc.z);
+      this.scene.add(box);
+      this.items.push({ pos: loc, mesh: box, active: true, respawnTimer: 0 });
+    });
+  }
 
-      const tireGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.45, 16);
-      tireGeo.rotateZ(Math.PI / 2);
-      const tireMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.8 });
-      const tire = new THREE.Mesh(tireGeo, tireMat);
-      wheelGroup.add(tire);
+  createKartMesh(primaryColorHex, stripeColorHex) {
+    const group = new THREE.Group();
 
-      // Neon Rim Ring
-      const rimGeo = new THREE.TorusGeometry(0.4, 0.06, 8, 16);
-      rimGeo.rotateY(Math.PI / 2);
-      const rimMat = new THREE.MeshBasicMaterial({ color: primaryColorHex });
-      const rim = new THREE.Mesh(rimGeo, rimMat);
-      wheelGroup.add(rim);
+    // Aerodynamic Chassis
+    const bodyGeo = new THREE.BoxGeometry(2.6, 0.7, 4.4);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: primaryColorHex,
+      roughness: 0.2,
+      metalness: 0.85,
+      emissive: primaryColorHex,
+      emissiveIntensity: 0.25
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.65;
+    group.add(body);
 
-      kartGroup.add(wheelGroup);
-      wheels.push(wheelGroup);
+    // Neon Racing Stripe
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.72, 4.45),
+      new THREE.MeshBasicMaterial({ color: stripeColorHex })
+    );
+    stripe.position.y = 0.65;
+    group.add(stripe);
+
+    // Rear Spoiler
+    const spoiler = new THREE.Mesh(
+      new THREE.BoxGeometry(3.0, 0.2, 0.8),
+      new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9 })
+    );
+    spoiler.position.set(0, 1.5, -1.8);
+    group.add(spoiler);
+
+    // 4 Neon Wheels
+    const wheels = [];
+    const wheelGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.4, 16);
+    wheelGeo.rotateZ(Math.PI / 2);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.8 });
+
+    const wheelOffsets = [
+      { x: -1.45, z: 1.4 },  // front left
+      { x: 1.45, z: 1.4 },   // front right
+      { x: -1.5, z: -1.4 },  // rear left
+      { x: 1.5, z: -1.4 }    // rear right
+    ];
+
+    wheelOffsets.forEach(pos => {
+      const wGroup = new THREE.Group();
+      wGroup.position.set(pos.x, 0.48, pos.z);
+
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      wGroup.add(w);
+
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(0.2, 0.35, 12),
+        new THREE.MeshBasicMaterial({ color: primaryColorHex, side: THREE.DoubleSide })
+      );
+      rim.rotation.y = Math.PI / 2;
+      rim.position.x = pos.x > 0 ? 0.21 : -0.21;
+      wGroup.add(rim);
+
+      group.add(wGroup);
+      wheels.push(wGroup);
     });
 
-    // Dual Exhaust Nitro Thrusters
-    const thrusterGlowGeo = new THREE.CircleGeometry(0.28, 12);
-    const thrusterGlowMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
-    const leftExhaust = new THREE.Mesh(thrusterGlowGeo, thrusterGlowMat);
-    leftExhaust.position.set(-0.6, 0.5, -2.25);
-    kartGroup.add(leftExhaust);
-
-    const rightExhaust = new THREE.Mesh(thrusterGlowGeo, thrusterGlowMat);
-    rightExhaust.position.set(0.6, 0.5, -2.25);
-    kartGroup.add(rightExhaust);
-
-    // Dynamic Undercarriage Glow Light
-    const underLight = new THREE.PointLight(primaryColorHex, 2.5, 9);
-    underLight.position.set(0, 0.3, 0);
-    kartGroup.add(underLight);
-
-    return {
-      mesh: kartGroup,
-      wheels,
-      exhausts: [leftExhaust, rightExhaust],
-      light: underLight
-    };
+    return { mesh: group, wheels };
   }
 
   createKarts() {
-    // Player 1 (Cyan Racer)
-    const p1 = this.createKartMesh(0x00f0ff, 0x004466);
-    this.scene.add(p1.mesh);
+    // Player 1 (Cyan)
+    const k1 = this.createKartMesh(0x00f0ff, 0xffffff);
+    this.scene.add(k1.mesh);
     this.karts[1] = {
       id: 1,
       name: 'Player 1',
-      color: '#00f0ff',
-      ...p1,
+      ...k1,
       x: -33,
       z: 22,
       angle: Math.PI / 2,
       speed: 0,
-      maxSpeed: 1.15,
-      accel: 0.038,
-      steerAngle: 0,
-      driftAngle: 0,
-      isDrifting: false,
+      maxSpeed: 0.88,
+      accel: 0.024,
+      nitroEnergy: 100,
       lap: 1,
       currentWaypoint: 0,
-      nitroEnergy: 100,
-      hasItem: null, // 'missile', 'nitro', 'shield'
-      input: { steer: 0, accel: false, brake: false, drift: false, item: false }
-    };
-
-    // Player 2 (Magenta Racer)
-    const p2 = this.createKartMesh(0xff0055, 0x660022);
-    this.scene.add(p2.mesh);
-    this.karts[2] = {
-      id: 2,
-      name: 'Player 2',
-      color: '#ff0055',
-      ...p2,
-      x: -37,
-      z: 27,
-      angle: Math.PI / 2,
-      speed: 0,
-      maxSpeed: 1.15,
-      accel: 0.038,
-      steerAngle: 0,
-      driftAngle: 0,
-      isDrifting: false,
-      lap: 1,
-      currentWaypoint: 0,
-      nitroEnergy: 100,
       hasItem: null,
       input: { steer: 0, accel: false, brake: false, drift: false, item: false }
     };
 
-    this.resetKartPositions();
+    // Player 2 (Magenta)
+    const k2 = this.createKartMesh(0xff0055, 0xffe600);
+    this.scene.add(k2.mesh);
+    this.karts[2] = {
+      id: 2,
+      name: 'Player 2',
+      ...k2,
+      x: -33,
+      z: 28,
+      angle: Math.PI / 2,
+      speed: 0,
+      maxSpeed: 0.88,
+      accel: 0.024,
+      nitroEnergy: 100,
+      lap: 1,
+      currentWaypoint: 0,
+      hasItem: null,
+      input: { steer: 0, accel: false, brake: false, drift: false, item: false }
+    };
+
+    this.resetRoundPositions();
   }
 
-  resetKartPositions() {
-    const p1 = this.karts[1];
-    p1.x = -33;
-    p1.z = 22;
-    p1.angle = Math.PI / 2;
-    p1.speed = 0;
-    p1.lap = 1;
-    p1.currentWaypoint = 0;
-    p1.nitroEnergy = 100;
-    p1.hasItem = null;
-    p1.mesh.position.set(p1.x, 0, p1.z);
-    p1.mesh.rotation.y = p1.angle;
+  resetRoundPositions() {
+    const k1 = this.karts[1];
+    k1.x = -33;
+    k1.z = 22;
+    k1.angle = Math.PI / 2;
+    k1.speed = 0;
+    k1.nitroEnergy = 100;
+    k1.lap = 1;
+    k1.currentWaypoint = 0;
+    k1.hasItem = null;
 
-    const p2 = this.karts[2];
-    p2.x = -37;
-    p2.z = 27;
-    p2.angle = Math.PI / 2;
-    p2.speed = 0;
-    p2.lap = 1;
-    p2.currentWaypoint = 0;
-    p2.nitroEnergy = 100;
-    p2.hasItem = null;
-    p2.mesh.position.set(p2.x, 0, p2.z);
-    p2.mesh.rotation.y = p2.angle;
+    const k2 = this.karts[2];
+    k2.x = -33;
+    k2.z = 28;
+    k2.angle = Math.PI / 2;
+    k2.speed = 0;
+    k2.nitroEnergy = 100;
+    k2.lap = 1;
+    k2.currentWaypoint = 0;
+    k2.hasItem = null;
+
+    this.syncKartHud(1);
+    this.syncKartHud(2);
   }
 
   startCountdown(onFinished) {
@@ -487,7 +444,7 @@ export class KartGame {
     const tick = () => {
       if (count > 0) {
         textEl.textContent = count;
-        textEl.className = 'font-orbitron font-black text-8xl text-cyan-400 drop-shadow-[0_0_35px_#00f0ff] animate-pulse';
+        textEl.className = 'font-orbitron font-black text-8xl text-yellow-300 drop-shadow-[0_0_35px_#ffe600] animate-pulse';
         window.sounds?.playCountdown(count);
         count--;
         setTimeout(tick, 900);
@@ -529,7 +486,7 @@ export class KartGame {
     kart.hasItem = null;
 
     if (itemType === 'nitro') {
-      kart.speed = kart.maxSpeed * 1.6;
+      kart.speed = kart.maxSpeed * 1.5;
       window.sounds?.playBoost();
       this.syncToMobile(kart.id, 'haptic', { pattern: [60, 40, 80] });
     } else if (itemType === 'missile') {
@@ -550,7 +507,7 @@ export class KartGame {
     mesh.rotation.y = kart.angle;
     this.scene.add(mesh);
 
-    const speed = 2.2;
+    const speed = 1.6;
     this.projectiles.push({
       mesh,
       ownerId: kart.id,
@@ -560,7 +517,7 @@ export class KartGame {
     });
   }
 
-  updatePhysics() {
+  updatePhysics(dt = 1.0) {
     if (!this.raceActive) return;
 
     [1, 2].forEach(id => {
@@ -571,33 +528,57 @@ export class KartGame {
         this.useItem(k);
       }
 
-      // Acceleration & Braking
+      // Acceleration & Braking (scaled by dt)
+      const accelStep = k.accel * dt;
       if (k.input.accel) {
-        k.speed = Math.min(k.maxSpeed, k.speed + k.accel);
+        k.speed = Math.min(k.maxSpeed, k.speed + accelStep);
       } else if (k.input.brake) {
-        k.speed = Math.max(-0.4, k.speed - k.accel * 1.5);
+        k.speed = Math.max(-0.35, k.speed - accelStep * 1.6);
       } else {
-        k.speed *= 0.96; // Rolling friction
+        k.speed *= Math.pow(0.97, dt); // Rolling friction
       }
 
       // Nitro boost
       if (k.input.drift && k.nitroEnergy > 5) {
-        k.speed = Math.min(k.maxSpeed * 1.5, k.speed + 0.05);
-        k.nitroEnergy = Math.max(0, k.nitroEnergy - 0.9);
+        k.speed = Math.min(k.maxSpeed * 1.45, k.speed + 0.035 * dt);
+        k.nitroEnergy = Math.max(0, k.nitroEnergy - 0.7 * dt);
         this.spawnExhaustParticles(k);
       } else {
-        k.nitroEnergy = Math.min(100, k.nitroEnergy + 0.25);
+        k.nitroEnergy = Math.min(100, k.nitroEnergy + 0.22 * dt);
       }
 
       // Steering
-      const steerFactor = 0.045 * (k.speed / (k.maxSpeed || 1));
+      const steerFactor = 0.038 * (k.speed / (k.maxSpeed || 1)) * dt;
       if (Math.abs(k.input.steer) > 0.1) {
         k.angle += -k.input.steer * steerFactor;
       }
 
       // Move forward
-      k.x += Math.sin(k.angle) * k.speed;
-      k.z += Math.cos(k.angle) * k.speed;
+      k.x += Math.sin(k.angle) * k.speed * dt;
+      k.z += Math.cos(k.angle) * k.speed * dt;
+
+      // Track Barrier Rail Collision & Lakitu Fail-Safe
+      const trackInfo = this.getClosestTrackInfo(k.x, k.z);
+      const curbLimit = 6.4;
+
+      if (trackInfo.distance > curbLimit) {
+        // Hit outer curb rail
+        const nx = (k.x - trackInfo.point.x) / trackInfo.distance;
+        const nz = (k.z - trackInfo.point.z) / trackInfo.distance;
+        k.x = trackInfo.point.x + nx * curbLimit;
+        k.z = trackInfo.point.z + nz * curbLimit;
+        k.speed *= Math.pow(0.92, dt); // scrub speed along wall
+      }
+
+      // Out of map fail-safe auto-respawn
+      if (trackInfo.distance > 13.0) {
+        k.x = trackInfo.point.x;
+        k.z = trackInfo.point.z;
+        k.angle = trackInfo.forwardAngle;
+        k.speed = 0.2;
+        window.sounds?.playPowerup?.();
+        this.syncToMobile(k.id, 'haptic', { pattern: [50, 50] });
+      }
 
       // Update 3D mesh
       k.mesh.position.set(k.x, 0, k.z);
@@ -605,7 +586,7 @@ export class KartGame {
 
       // Wheel spin animation
       k.wheels.forEach(w => {
-        w.children[0].rotation.x += k.speed * 1.8;
+        w.children[0].rotation.x += k.speed * 1.6 * dt;
       });
 
       // Front wheels steer rotation
@@ -617,8 +598,8 @@ export class KartGame {
 
       // Boost Pad Triggers
       this.boostPads.forEach(pad => {
-        if (Math.hypot(k.x - pad.pos.x, k.z - pad.pos.z) < 4.0) {
-          k.speed = k.maxSpeed * 1.65;
+        if (Math.hypot(k.x - pad.pos.x, k.z - pad.pos.z) < 3.8) {
+          k.speed = k.maxSpeed * 1.55;
           window.sounds?.playBoost();
           this.syncToMobile(k.id, 'haptic', { pattern: [50, 40] });
         }
@@ -629,7 +610,7 @@ export class KartGame {
         if (box.active && Math.hypot(k.x - box.pos.x, k.z - box.pos.z) < 3.2) {
           box.active = false;
           box.mesh.visible = false;
-          box.respawnTimer = 300; // 5 seconds
+          box.respawnTimer = 260;
           k.hasItem = Math.random() > 0.5 ? 'nitro' : 'missile';
           window.sounds?.playPowerup();
           this.syncToMobile(k.id, 'haptic', { pattern: [30, 40, 80] });
@@ -638,32 +619,59 @@ export class KartGame {
       });
     });
 
+    // Kart-to-Kart Bumper Collision (Calculated once outside the loop)
+    const k1 = this.karts[1];
+    const k2 = this.karts[2];
+    if (k1 && k2) {
+      const dx = k2.x - k1.x;
+      const dz = k2.z - k1.z;
+      const dist = Math.hypot(dx, dz);
+      const minDistance = 3.4;
+      if (dist < minDistance && dist > 0.001) {
+        const overlap = (minDistance - dist) / 2;
+        const nx = dx / dist;
+        const nz = dz / dist;
+        k1.x -= nx * overlap;
+        k1.z -= nz * overlap;
+        k2.x += nx * overlap;
+        k2.z += nz * overlap;
+
+        const tempSpeed = k1.speed;
+        k1.speed = Math.max(0.1, k2.speed * 0.9);
+        k2.speed = Math.max(0.1, tempSpeed * 0.9);
+
+        window.sounds?.playHit?.();
+        this.syncToMobile(1, 'haptic', { pattern: [30] });
+        this.syncToMobile(2, 'haptic', { pattern: [30] });
+      }
+    }
+
     // Respawn Item Boxes
     this.items.forEach(box => {
       if (!box.active) {
-        box.respawnTimer--;
+        box.respawnTimer -= dt;
         if (box.respawnTimer <= 0) {
           box.active = true;
           box.mesh.visible = true;
         }
       } else {
-        box.mesh.rotation.y += 0.04;
+        box.mesh.rotation.y += 0.03 * dt;
       }
     });
 
     // Update Missiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
-      p.mesh.position.x += p.vx;
-      p.mesh.position.z += p.vz;
-      p.life--;
+      p.mesh.position.x += p.vx * dt;
+      p.mesh.position.z += p.vz * dt;
+      p.life -= dt;
 
       // Hit opponent check
       const targetId = p.ownerId === 1 ? 2 : 1;
       const target = this.karts[targetId];
-      if (Math.hypot(p.mesh.position.x - target.x, p.mesh.position.z - target.z) < 3.0) {
-        target.speed = -0.3; // spin out
-        target.angle += Math.PI * 0.8;
+      if (Math.hypot(p.mesh.position.x - target.x, p.mesh.position.z - target.z) < 2.8) {
+        target.speed = -0.2;
+        target.angle += Math.PI * 0.7;
         window.sounds?.playExplosion();
         this.syncToMobile(targetId, 'haptic', { pattern: [120, 60, 150] });
         this.scene.remove(p.mesh);
@@ -675,24 +683,6 @@ export class KartGame {
         this.scene.remove(p.mesh);
         this.projectiles.splice(i, 1);
       }
-    }
-
-    // Kart-to-Kart Bumping Collision
-    const k1 = this.karts[1];
-    const k2 = this.karts[2];
-    const dx = k2.x - k1.x;
-    const dz = k2.z - k1.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist < 3.6 && dist > 0.01) {
-      const nx = dx / dist;
-      const nz = dz / dist;
-      k1.x -= nx * 0.8;
-      k1.z -= nz * 0.8;
-      k2.x += nx * 0.8;
-      k2.z += nz * 0.8;
-      window.sounds?.playHit();
-      this.syncToMobile(1, 'haptic', { pattern: [35] });
-      this.syncToMobile(2, 'haptic', { pattern: [35] });
     }
   }
 
@@ -758,7 +748,7 @@ export class KartGame {
     });
   }
 
-  updateCamera() {
+  updateCamera(dt = 1.0) {
     const k1 = this.karts[1];
     const k2 = this.karts[2];
 
@@ -769,19 +759,26 @@ export class KartGame {
     const targetY = THREE.MathUtils.clamp(32 + dist * 0.45, 34, 58);
     const targetZ = midZ + THREE.MathUtils.clamp(30 + dist * 0.4, 32, 52);
 
-    this.camera.position.x += (midX - this.camera.position.x) * 0.08;
-    this.camera.position.y += (targetY - this.camera.position.y) * 0.08;
-    this.camera.position.z += (targetZ - this.camera.position.z) * 0.08;
+    const camLerp = Math.min(1.0, 0.08 * dt);
+    this.camera.position.x += (midX - this.camera.position.x) * camLerp;
+    this.camera.position.y += (targetY - this.camera.position.y) * camLerp;
+    this.camera.position.z += (targetZ - this.camera.position.z) * camLerp;
 
     this.camera.lookAt(midX, 1.2, midZ);
   }
 
   start() {
     if (this.animId) cancelAnimationFrame(this.animId);
+    this.lastTime = performance.now();
 
     const loop = () => {
-      this.updatePhysics();
-      this.updateCamera();
+      const now = performance.now();
+      const deltaMs = now - this.lastTime;
+      this.lastTime = now;
+      const dt = Math.min(Math.max(deltaMs / 16.667, 0.2), 2.5);
+
+      this.updatePhysics(dt);
+      this.updateCamera(dt);
       this.renderer.render(this.scene, this.camera);
       this.animId = requestAnimationFrame(loop);
     };
@@ -805,4 +802,3 @@ export class KartGame {
     });
   }
 }
-

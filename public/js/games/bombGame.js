@@ -28,6 +28,7 @@ export class BombGame {
     this.roundActive = false;
     this.scores = { 1: 0, 2: 0 };
     this.players = {};
+    this.lastTime = performance.now();
 
     this.initThree();
     this.buildArena();
@@ -521,8 +522,11 @@ export class BombGame {
     }, 2000);
   }
 
-  updatePhysics() {
+  updatePhysics(dt = 1.0) {
     if (!this.roundActive) return;
+
+    const maxBoundW = (this.cols * this.tileSize) / 2 - 1.8;
+    const maxBoundD = (this.rows * this.tileSize) / 2 - 1.8;
 
     // Move Players with Grid Wall Collisions
     [1, 2].forEach(id => {
@@ -533,11 +537,12 @@ export class BombGame {
       const iy = p.input.y;
 
       if (Math.hypot(ix, iy) > 0.2) {
-        const nextX = p.x + ix * p.speed;
-        const nextZ = p.z + iy * p.speed;
+        const moveStep = p.speed * dt;
+        const nextX = p.x + ix * moveStep;
+        const nextZ = p.z + iy * moveStep;
 
         // Collision box check against grid pillars and crates
-        const rad = 1.1;
+        const rad = 1.0;
         const g1 = this.worldToGrid(nextX + rad, p.z);
         const g2 = this.worldToGrid(nextX - rad, p.z);
         const g3 = this.worldToGrid(p.x, nextZ + rad);
@@ -552,6 +557,9 @@ export class BombGame {
         p.mesh.rotation.y = Math.atan2(ix, iy);
       }
 
+      // Hard boundary clamp
+      p.x = THREE.MathUtils.clamp(p.x, -maxBoundW, maxBoundW);
+      p.z = THREE.MathUtils.clamp(p.z, -maxBoundD, maxBoundD);
       p.mesh.position.set(p.x, 0, p.z);
 
       // Powerup Pickup
@@ -562,7 +570,7 @@ export class BombGame {
         if (pu.type === 'bomb') p.maxBombs++;
         else p.bombRange++;
 
-        window.sounds?.playPowerup();
+        window.sounds?.playPowerup?.();
         this.scene.remove(pu.mesh);
         this.powerups.splice(puIdx, 1);
         this.syncToMobile(p.id, 'haptic', { pattern: [40, 60] });
@@ -572,7 +580,7 @@ export class BombGame {
     // Update Bombs
     for (let i = this.bombs.length - 1; i >= 0; i--) {
       const b = this.bombs[i];
-      b.timer--;
+      b.timer -= dt;
       b.mesh.scale.setScalar(1 + Math.sin(Date.now() * 0.02) * 0.12); // Pulse
       if (b.timer <= 0) {
         this.detonateBomb(i);
@@ -582,8 +590,8 @@ export class BombGame {
     // Update Explosions
     for (let i = this.explosions.length - 1; i >= 0; i--) {
       const exp = this.explosions[i];
-      exp.life--;
-      exp.mesh.material.opacity = exp.life / 18;
+      exp.life -= dt;
+      exp.mesh.material.opacity = Math.max(0, exp.life / 18);
       if (exp.life <= 0) {
         this.scene.remove(exp.mesh);
         this.explosions.splice(i, 1);
@@ -593,8 +601,15 @@ export class BombGame {
 
   start() {
     if (this.animId) cancelAnimationFrame(this.animId);
+    this.lastTime = performance.now();
+
     const loop = () => {
-      this.updatePhysics();
+      const now = performance.now();
+      const deltaMs = now - this.lastTime;
+      this.lastTime = now;
+      const dt = Math.min(Math.max(deltaMs / 16.667, 0.2), 2.5);
+
+      this.updatePhysics(dt);
       this.renderer.render(this.scene, this.camera);
       this.animId = requestAnimationFrame(loop);
     };
