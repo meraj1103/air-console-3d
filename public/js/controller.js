@@ -193,27 +193,44 @@ class MobileGamepad {
     const lB = document.getElementById('label-b');
     const lX = document.getElementById('label-x');
     const lY = document.getElementById('label-y');
+    const lL1 = document.getElementById('label-l1');
+    const lR1 = document.getElementById('label-r1');
 
     if (game === 'kart') {
       if (lA) lA.textContent = 'ACCEL';
       if (lB) lB.textContent = 'BRAKE';
       if (lX) lX.textContent = 'ITEM';
       if (lY) lY.textContent = 'NITRO';
+      if (lL1) lL1.textContent = 'NITRO';
+      if (lR1) lR1.textContent = 'ITEM';
+    } else if (game === 'hotwheels') {
+      if (lA) lA.textContent = 'GAS';
+      if (lB) lB.textContent = 'BRAKE';
+      if (lX) lX.textContent = 'DRIFT';
+      if (lY) lY.textContent = 'NITRO';
+      if (lL1) lL1.textContent = 'RESPAWN';
+      if (lR1) lR1.textContent = 'NITRO';
     } else if (game === 'bomb') {
       if (lA) lA.textContent = 'BOMB';
       if (lB) lB.textContent = 'RUN';
       if (lX) lX.textContent = 'PUNCH';
       if (lY) lY.textContent = 'POWER';
+      if (lL1) lL1.textContent = 'BOMB';
+      if (lR1) lR1.textContent = 'PUNCH';
     } else if (game === 'tank') {
       if (lA) lA.textContent = 'FIRE';
       if (lB) lB.textContent = 'REV';
       if (lX) lX.textContent = 'SHIELD';
       if (lY) lY.textContent = 'BOOST';
+      if (lL1) lL1.textContent = 'SHIELD';
+      if (lR1) lR1.textContent = 'FIRE';
     } else {
       if (lA) lA.textContent = 'A';
       if (lB) lB.textContent = 'B';
       if (lX) lX.textContent = 'X';
       if (lY) lY.textContent = 'Y';
+      if (lL1) lL1.textContent = 'L1';
+      if (lR1) lR1.textContent = 'R1';
     }
   }
 
@@ -396,8 +413,16 @@ class MobileGamepad {
 
   sendInput() {
     if (!this.isConnected) return;
+    let effectiveX = this.input.x;
+    if (this.gyroEnabled && Math.abs(effectiveX) < 0.1) {
+      const rawTilt = (this.input.tiltX || 0) / 25;
+      if (Math.abs(rawTilt) > 0.12) {
+        effectiveX = Math.max(-1, Math.min(1, rawTilt));
+      }
+    }
+
     this.socket.emit('controller-input', {
-      x: this.input.x,
+      x: effectiveX,
       y: this.input.y,
       btnA: this.input.btnA,
       btnB: this.input.btnB,

@@ -4,6 +4,7 @@ import { BombGame } from './games/bombGame.js';
 import { TankGame } from './games/tankGame.js';
 import { GamepadMode } from './games/gamepadMode.js';
 import { SnesEmulator } from './games/snesEmulator.js';
+import { HotWheelsMode } from './games/hotWheelsMode.js';
 
 class AirConsoleHost {
   constructor() {
@@ -321,6 +322,9 @@ class AirConsoleHost {
       if (!this.players[2]) {
         this.activeGame.p2IsBot = true;
       }
+    } else if (this.currentGameType === 'hotwheels') {
+      if (titleEl) titleEl.textContent = '🏎️ HOT WHEELS UNLEASHED CONSOLE';
+      this.activeGame = new HotWheelsMode(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
     } else if (this.currentGameType === 'snes') {
       if (titleEl) titleEl.textContent = '🕹️ SUPER FAMICOM / SNES CONSOLE (.SFC)';
       this.activeGame = new SnesEmulator(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
