@@ -97,7 +97,7 @@ export class HotWheelsMode {
             </div>
 
             <div class="mt-3 text-[11px] font-mono text-slate-400 text-center">
-              Keys: <b class="text-cyan-300">W (Gas)</b> | <b class="text-rose-400">S (Brake)</b> | <b class="text-yellow-400">A/D (Steer)</b> | <b class="text-orange-400">Space (Boost)</b>
+              Xbox: <b class="text-emerald-400">RT (Gas)</b> | <b class="text-rose-400">LT (Brake)</b> | <b class="text-yellow-400">LS (Steer)</b> | <b class="text-emerald-300">A (Boost)</b> | <b class="text-cyan-300">RB (Respawn)</b>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ export class HotWheelsMode {
             </div>
 
             <div class="mt-3 text-[11px] font-mono text-slate-400 text-center">
-              Keys: <b class="text-pink-300">Up (Gas)</b> | <b class="text-rose-400">Down (Brake)</b> | <b class="text-yellow-400">Left/Right</b> | <b class="text-orange-400">Enter (Boost)</b>
+              Xbox P2: <b class="text-emerald-400">RT (Gas)</b> | <b class="text-rose-400">LT (Brake)</b> | <b class="text-yellow-400">LS (Steer)</b> | <b class="text-emerald-300">A (Boost)</b> | <b class="text-cyan-300">RB (Respawn)</b>
             </div>
           </div>
         </div>
@@ -191,12 +191,12 @@ export class HotWheelsMode {
     const steerLeft = steer < -0.25;
     const steerRight = steer > 0.25;
 
-    // Pedals & Nitro
-    const gas = !!(input.btnA || input.gas || input.fire);
-    const brake = !!(input.btnB || input.brake);
-    const boost = !!(input.btnY || input.boost || input.btnR || input.btnR1);
-    const respawn = !!(input.btnX || input.respawn || input.btnL || input.btnL1);
-    const pause = !!(input.start || input.select);
+    // Xbox Mapped Inputs (RT: Accel, LT: Brake, A: Boost, RB: Respawn)
+    const gas = !!(input.btnRT || input.gas);
+    const brake = !!(input.btnLT || input.brake);
+    const boost = !!(input.btnA || input.boost);
+    const respawn = !!(input.btnRB || input.respawn);
+    const pause = !!(input.start || input.pause);
 
     // Audio feedback on laptop speakers
     if (boost && !this.inputs[playerNumber].boost) {
@@ -217,7 +217,7 @@ export class HotWheelsMode {
     // Update Dashboard Visuals
     const wheel = document.getElementById(`hw-p${playerNumber}-wheel`);
     if (wheel) {
-      wheel.style.transform = `rotate(${steer * 65}deg)`;
+      wheel.style.transform = `rotate(${steer * 270}deg)`;
     }
 
     const setHighlight = (id, active, activeClass, inactiveClass) => {

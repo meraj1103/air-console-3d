@@ -13,14 +13,16 @@ class MobileGamepad {
     this.input = {
       x: 0,
       y: 0,
-      btnA: false,
-      btnB: false,
-      btnX: false,
-      btnY: false,
-      btnL: false,
-      btnR: false,
-      select: false,
-      start: false,
+      btnRT: false, // Accelerator
+      btnLT: false, // Brake / Reverse
+      btnRB: false, // Respawn
+      btnLB: false, // Look Back
+      btnA: false,  // Boost
+      btnX: false,  // Dash Left
+      btnB: false,  // Dash Right
+      btnY: false,  // Interact
+      select: false,// Island Map
+      start: false, // Pause
       tiltX: 0,
       tiltY: 0
     };
@@ -61,14 +63,16 @@ class MobileGamepad {
     this.stickBase = document.getElementById('joystick-base');
     this.stickHandle = document.getElementById('joystick-handle');
 
+    this.btnRT = document.getElementById('btn-rt');
+    this.btnLT = document.getElementById('btn-lt');
+    this.btnRB = document.getElementById('btn-rb');
+    this.btnLB = document.getElementById('btn-lb');
     this.btnA = document.getElementById('btn-a');
     this.btnB = document.getElementById('btn-b');
     this.btnX = document.getElementById('btn-x');
     this.btnY = document.getElementById('btn-y');
-    this.btnL1 = document.getElementById('btn-l1');
-    this.btnR1 = document.getElementById('btn-r1');
-    this.btnSelect = document.getElementById('btn-select');
-    this.btnStart = document.getElementById('btn-start');
+    this.btnView = document.getElementById('btn-view');
+    this.btnMenu = document.getElementById('btn-menu');
 
     this.gyroToggleBtn = document.getElementById('gyro-toggle-btn');
     this.gyroStatusLabel = document.getElementById('gyro-status-label');
@@ -373,14 +377,17 @@ class MobileGamepad {
       });
     };
 
-    bindBtn(this.btnA, 'btnA', 25);
-    bindBtn(this.btnB, 'btnB', 25);
-    bindBtn(this.btnX, 'btnX', 25);
-    bindBtn(this.btnY, 'btnY', 25);
-    bindBtn(this.btnL1, 'btnL', 30);
-    bindBtn(this.btnR1, 'btnR', 30);
-    bindBtn(this.btnSelect, 'select', 25);
-    bindBtn(this.btnStart, 'start', 25);
+    // Xbox Layout Controls
+    bindBtn(this.btnRT, 'btnRT', 35); // Accelerator (RT)
+    bindBtn(this.btnLT, 'btnLT', 35); // Brake / Reverse (LT)
+    bindBtn(this.btnRB, 'btnRB', 30); // Respawn (RB)
+    bindBtn(this.btnLB, 'btnLB', 30); // Look Back (LB)
+    bindBtn(this.btnA, 'btnA', 30);   // Boost (A)
+    bindBtn(this.btnX, 'btnX', 25);   // Dash Left (X)
+    bindBtn(this.btnB, 'btnB', 25);   // Dash Right (B)
+    bindBtn(this.btnY, 'btnY', 25);   // Interact (Y)
+    bindBtn(this.btnView, 'select', 25); // Island Map (View)
+    bindBtn(this.btnMenu, 'start', 25);  // Pause (Menu)
   }
 
   showSecureContextNotice() {
@@ -513,7 +520,7 @@ class MobileGamepad {
       if (angleDeg < -180) angleDeg += 360;
 
       // Clamp between -60 and +60 deg for driving
-      const clamped = Math.max(-60, Math.min(60, angleDeg));
+      const clamped = Math.max(-180, Math.min(180, angleDeg));
       this.processSteerAngle(clamped);
     };
 
@@ -591,15 +598,17 @@ class MobileGamepad {
     let normalizedSteer = 0;
     if (Math.abs(calibratedAngle) > deadzone) {
       const sign = Math.sign(calibratedAngle);
-      const mag = (Math.abs(calibratedAngle) - deadzone) / 28;
+      // Fluid scaling: 60 deg = full lock
+      const mag = (Math.abs(calibratedAngle) - deadzone) / 55.0;
       normalizedSteer = sign * Math.min(1.0, Math.max(0, mag));
     }
 
     this.input.tiltX = calibratedAngle;
     this.gyroNormalizedSteer = normalizedSteer;
 
+    // Full 1:1 steering rotation
     if (this.gyroWheelGraphic) {
-      this.gyroWheelGraphic.style.transform = `rotate(${calibratedAngle * 1.6}deg)`;
+      this.gyroWheelGraphic.style.transform = `rotate(${calibratedAngle}deg)`;
     }
     if (this.gyroAngleDisplay) {
       const rounded = Math.round(calibratedAngle);
@@ -621,18 +630,29 @@ class MobileGamepad {
     this.socket.emit('controller-input', {
       x: effectiveX,
       y: this.input.y,
+      btnRT: this.input.btnRT,
+      btnLT: this.input.btnLT,
+      btnRB: this.input.btnRB,
+      btnLB: this.input.btnLB,
       btnA: this.input.btnA,
       btnB: this.input.btnB,
       btnX: this.input.btnX,
       btnY: this.input.btnY,
-      btnL: this.input.btnL,
-      btnR: this.input.btnR,
       select: this.input.select,
       start: this.input.start,
-      // Compatibility aliases
-      fire: this.input.btnA,
-      boost: this.input.btnB || this.input.btnY,
-      shield: this.input.btnX,
+      // Named Aliases
+      gas: this.input.btnRT,
+      brake: this.input.btnLT,
+      boost: this.input.btnA,
+      dashLeft: this.input.btnX,
+      dashRight: this.input.btnB,
+      interact: this.input.btnY,
+      respawn: this.input.btnRB,
+      lookback: this.input.btnLB,
+      pause: this.input.start,
+      map: this.input.select,
+      // Compatibility
+      fire: this.input.btnA || this.input.btnRT,
       tiltX: this.input.tiltX,
       tiltY: this.input.tiltY
     });
