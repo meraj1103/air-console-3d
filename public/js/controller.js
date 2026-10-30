@@ -383,15 +383,47 @@ class MobileGamepad {
     bindBtn(this.btnStart, 'start', 25);
   }
 
+  showSecureContextNotice() {
+    if (window.isSecureContext === false && location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      const existing = document.getElementById('https-secure-notice');
+      if (existing) return;
+      const notice = document.createElement('div');
+      notice.id = 'https-secure-notice';
+      notice.className = 'fixed top-16 left-4 right-4 z-50 p-3 rounded-2xl bg-gradient-to-r from-amber-950/95 to-slate-900/95 border-2 border-amber-400 text-slate-100 shadow-[0_0_25px_rgba(255,180,0,0.4)] flex flex-col gap-2 font-mono text-xs';
+      notice.innerHTML = `
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-2 text-amber-400 font-bold font-orbitron">
+            <span>⚠️</span> <span>HTTPS NEEDED FOR TILT GYRO</span>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-white px-2 py-0.5 text-sm cursor-pointer">✕</button>
+        </div>
+        <p class="text-[11px] text-slate-300">
+          Mobile Chrome & Safari block motion sensors over raw Wi-Fi IP (<code>http://</code>).
+        </p>
+        <div class="flex items-center gap-2 pt-1">
+          <a href="https://air-console-3d.onrender.com" target="_blank" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black font-orbitron text-[10px] tracking-wider text-center flex-1 shadow">
+            OPEN HTTPS SERVER ⚡
+          </a>
+          <button onclick="this.parentElement.parentElement.remove()" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-white/20 text-slate-200 text-[10px] font-bold">
+            USE TOUCH STEERING
+          </button>
+        </div>
+      `;
+      document.body.appendChild(notice);
+    }
+  }
+
   toggleGyro() {
     if (!this.gyroEnabled) {
+      this.showSecureContextNotice();
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
           .then(res => {
             if (res === 'granted') {
               this.enableGyro();
             } else {
-              alert('Motion/Gyroscope permission was denied. Please allow motion sensors in browser settings.');
+              alert('Motion permission denied. You can still steer by touching the wheel or joystick!');
+              this.enableGyro(); // Fallback to touch steering wheel
             }
           })
           .catch((err) => {
@@ -415,18 +447,87 @@ class MobileGamepad {
       this.gyroToggleBtn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
       this.gyroToggleBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border-white/20');
     }
-    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'GYRO: ON';
+    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'WHEEL: ON';
     if (this.gyroCalibrateBtn) this.gyroCalibrateBtn.classList.remove('hidden');
     if (this.gyroSteeringHud) this.gyroSteeringHud.classList.remove('hidden');
     if (this.joystickAmbientGuide) this.joystickAmbientGuide.classList.add('hidden');
 
     this.triggerHaptic([40, 20, 60]);
 
+    // Primary: DeviceOrientation (e.beta / e.gamma)
     this.gyroHandler = (e) => {
       this.handleOrientation(e);
     };
 
-    window.addEventListener('deviceorientation', this.gyroHandler);
+    // Fallback: DeviceMotion (e.accelerationIncludingGravity)
+    this.motionHandler = (e) => {
+      if (this.hasReceivedOrientation) return; // Orientation is already working
+      const acc = e.accelerationIncludingGravity;
+      if (acc && (typeof acc.x === 'number' || typeof acc.y === 'number')) {
+        const orientationAngle = window.screen?.orientation?.angle ?? (window.orientation || 0);
+        let rawAngle = 0;
+        if (orientationAngle === 90) {
+          rawAngle = (acc.y || 0) * 8.0;
+        } else if (orientationAngle === -90 || orientationAngle === 270) {
+          rawAngle = -(acc.y || 0) * 8.0;
+        } else {
+          rawAngle = (acc.x || 0) * 8.0;
+        }
+        this.processSteerAngle(rawAngle);
+      }
+    };
+
+    window.addEventListener('deviceorientation', this.gyroHandler, true);
+    window.addEventListener('devicemotion', this.motionHandler, true);
+
+    // Initialize interactive touch-to-steer wheel
+    this.bindTouchSteeringWheel();
+  }
+
+  bindTouchSteeringWheel() {
+    if (!this.gyroWheelGraphic || this.hasBoundWheelTouch) return;
+    this.hasBoundWheelTouch = true;
+
+    let isTouchingWheel = false;
+    let wheelCenter = { x: 0, y: 0 };
+
+    const startTouch = (e) => {
+      isTouchingWheel = true;
+      const rect = this.gyroWheelGraphic.getBoundingClientRect();
+      wheelCenter = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      moveTouch(e);
+    };
+
+    const moveTouch = (e) => {
+      if (!isTouchingWheel) return;
+      const touch = e.touches ? e.touches[0] : e;
+      const dx = touch.clientX - wheelCenter.x;
+      const dy = touch.clientY - wheelCenter.y;
+      
+      // Calculate angle from 12 o'clock (-90 deg)
+      let angleDeg = (Math.atan2(dy, dx) * 180 / Math.PI) + 90;
+      if (angleDeg > 180) angleDeg -= 360;
+      if (angleDeg < -180) angleDeg += 360;
+
+      // Clamp between -60 and +60 deg for driving
+      const clamped = Math.max(-60, Math.min(60, angleDeg));
+      this.processSteerAngle(clamped);
+    };
+
+    const endTouch = () => {
+      if (!isTouchingWheel) return;
+      isTouchingWheel = false;
+      // Spring back to center
+      this.processSteerAngle(0);
+    };
+
+    this.gyroWheelGraphic.addEventListener('touchstart', startTouch, { passive: false });
+    window.addEventListener('touchmove', moveTouch, { passive: true });
+    window.addEventListener('touchend', endTouch, { passive: true });
+    window.addEventListener('touchcancel', endTouch, { passive: true });
   }
 
   disableGyro() {
@@ -437,13 +538,16 @@ class MobileGamepad {
       this.gyroToggleBtn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
       this.gyroToggleBtn.classList.add('bg-slate-900', 'text-slate-300', 'border-white/20');
     }
-    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'GYRO: OFF';
+    if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'WHEEL: OFF';
     if (this.gyroCalibrateBtn) this.gyroCalibrateBtn.classList.add('hidden');
     if (this.gyroSteeringHud) this.gyroSteeringHud.classList.add('hidden');
     if (this.joystickAmbientGuide) this.joystickAmbientGuide.classList.remove('hidden');
 
     if (this.gyroHandler) {
-      window.removeEventListener('deviceorientation', this.gyroHandler);
+      window.removeEventListener('deviceorientation', this.gyroHandler, true);
+    }
+    if (this.motionHandler) {
+      window.removeEventListener('devicemotion', this.motionHandler, true);
     }
     this.input.tiltX = 0;
     this.input.tiltY = 0;
@@ -460,28 +564,29 @@ class MobileGamepad {
 
   handleOrientation(e) {
     if (!this.gyroEnabled) return;
+    if (e.beta !== null && e.beta !== undefined && e.gamma !== null && e.gamma !== undefined) {
+      this.hasReceivedOrientation = true;
+    }
 
-    // Detect screen orientation (0 = portrait, 90 / -90 = landscape)
     const orientationAngle = window.screen?.orientation?.angle ?? (window.orientation || 0);
-
     let rawAngle = 0;
     if (orientationAngle === 90) {
-      // Landscape (charging port on right)
       rawAngle = (e.beta || 0);
     } else if (orientationAngle === -90 || orientationAngle === 270) {
-      // Landscape (charging port on left)
       rawAngle = -(e.beta || 0);
     } else if (orientationAngle === 180) {
       rawAngle = -(e.gamma || 0);
     } else {
-      // Portrait
       rawAngle = (e.gamma || 0);
     }
 
+    this.processSteerAngle(rawAngle);
+  }
+
+  processSteerAngle(rawAngle) {
     this.lastRawAngle = rawAngle;
     const calibratedAngle = rawAngle - this.gyroCenterOffset;
 
-    // Deadzone (2 deg) & clamp (-30 to +30 deg for full steer)
     const deadzone = 2.0;
     let normalizedSteer = 0;
     if (Math.abs(calibratedAngle) > deadzone) {
@@ -490,19 +595,9 @@ class MobileGamepad {
       normalizedSteer = sign * Math.min(1.0, Math.max(0, mag));
     }
 
-    // Pitch forward / backward for tiltY
-    let pitch = 0;
-    if (orientationAngle === 90 || orientationAngle === 270) {
-      pitch = (e.gamma || 0);
-    } else {
-      pitch = (e.beta || 0) - 30;
-    }
-
     this.input.tiltX = calibratedAngle;
-    this.input.tiltY = pitch;
     this.gyroNormalizedSteer = normalizedSteer;
 
-    // Smooth UI steering wheel rotation on phone screen
     if (this.gyroWheelGraphic) {
       this.gyroWheelGraphic.style.transform = `rotate(${calibratedAngle * 1.6}deg)`;
     }

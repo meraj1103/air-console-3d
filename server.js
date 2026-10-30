@@ -4,6 +4,37 @@ const { Server } = require('socket.io');
 const os = require('os');
 const path = require('path');
 const QRCode = require('qrcode');
+const { spawn } = require('child_process');
+
+// 🚗 Windows Native DirectInput Hardware Bridge (Python)
+let pythonBridge = null;
+
+function startPythonBridge() {
+  try {
+    const bridgeScript = path.join(__dirname, 'windows_game_bridge.py');
+    pythonBridge = spawn('python', [bridgeScript], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    pythonBridge.stdout.on('data', (d) => {
+      console.log('[GameBridge] ' + d.toString().trim());
+    });
+
+    pythonBridge.stderr.on('data', (d) => {
+      console.warn('[GameBridge Warn] ' + d.toString().trim());
+    });
+
+    pythonBridge.on('close', (code) => {
+      console.log('[GameBridge] Closed with code ' + code + '. Restarting in 3s...');
+      setTimeout(startPythonBridge, 3000);
+    });
+  } catch (err) {
+    console.error('[GameBridge Error] Could not start Python bridge:', err);
+  }
+}
+
+// Start bridge automatically for native PC games
+startPythonBridge();
 
 const app = express();
 const server = http.createServer(app);
@@ -224,6 +255,16 @@ io.on('connection', (socket) => {
         ...inputData
       });
     }
+
+    // Direct hardware injection into Windows game (Hot Wheels)
+    if (pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
+      try {
+        pythonBridge.stdin.write(JSON.stringify({
+          playerNumber: socket.playerNumber,
+          ...inputData
+        }) + '\n');
+      } catch (e) {}
+    }
   });
 
   // Host sends haptic vibration / sound trigger / HP sync to phone
@@ -279,6 +320,14 @@ io.on('connection', (socket) => {
       const room = rooms.get(socket.roomCode);
       if (room) {
         console.log(`[Player Disconnected] Player ${socket.playerNumber} left room ${socket.roomCode}`);
+        if (pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
+          try {
+            pythonBridge.stdin.write(JSON.stringify({
+              playerNumber: socket.playerNumber,
+              gas: false, brake: false, boost: false, drift: false, respawn: false, x: 0, tiltX: 0
+            }) + '\n');
+          } catch (e) {}
+        }
         room.players[socket.playerNumber].socketId = null;
         room.players[socket.playerNumber].ready = false;
         io.to(room.hostId).emit('player-left', {
