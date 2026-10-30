@@ -1,5 +1,8 @@
+// 🖥️ AIR-CONSOLE 3D HOST OS (Screen Manager)
+import { KartGame } from './games/kartGame.js';
+import { BombGame } from './games/bombGame.js';
 import { TankGame } from './games/tankGame.js';
-import { PongGame } from './games/pongGame.js';
+import { GamepadMode } from './games/gamepadMode.js';
 
 class AirConsoleHost {
   constructor() {
@@ -7,7 +10,7 @@ class AirConsoleHost {
     this.roomCode = null;
     this.controllerUrl = '';
     this.players = { 1: false, 2: false };
-    this.currentGameType = 'tank'; // 'tank' or 'pong'
+    this.currentGameType = 'kart'; // Default to fast fun Kart Racing!
     this.activeGame = null;
     this.scores = { 1: 0, 2: 0 };
     this.keyboardFallbackEnabled = true;
@@ -62,18 +65,18 @@ class AirConsoleHost {
     // Mobile player joined
     this.socket.on('player-joined', ({ playerNumber, name }) => {
       this.players[playerNumber] = true;
-      window.sounds.playJoin();
+      window.sounds?.playJoin();
 
       if (playerNumber === 1) {
-        this.p1Slot.classList.add('border-cyan-400', 'bg-cyan-950/30');
-        this.p1Slot.classList.remove('border-white/10', 'bg-slate-900/40');
-        this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping mr-2"></span>CONNECTED: <b class="text-white">${name || 'Player 1'}</b>`;
-        document.getElementById('p1-ready-badge').classList.remove('hidden');
+        this.p1Slot?.classList.add('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+        this.p1Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
+        if (this.p1Status) this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping mr-2"></span>JOY-CON 1: <b class="text-white">${name || 'Player 1'}</b>`;
+        document.getElementById('p1-ready-badge')?.classList.remove('hidden');
       } else {
-        this.p2Slot.classList.add('border-pink-500', 'bg-pink-950/30');
-        this.p2Slot.classList.remove('border-white/10', 'bg-slate-900/40');
-        this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping mr-2"></span>CONNECTED: <b class="text-white">${name || 'Player 2'}</b>`;
-        document.getElementById('p2-ready-badge').classList.remove('hidden');
+        this.p2Slot?.classList.add('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+        this.p2Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
+        if (this.p2Status) this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping mr-2"></span>JOY-CON 2: <b class="text-white">${name || 'Player 2'}</b>`;
+        document.getElementById('p2-ready-badge')?.classList.remove('hidden');
       }
 
       this.checkStartReadiness();
@@ -83,15 +86,15 @@ class AirConsoleHost {
     this.socket.on('player-left', ({ playerNumber }) => {
       this.players[playerNumber] = false;
       if (playerNumber === 1) {
-        this.p1Slot.classList.remove('border-cyan-400', 'bg-cyan-950/30');
-        this.p1Slot.classList.add('border-white/10', 'bg-slate-900/40');
-        this.p1Status.innerHTML = `WAITING FOR PHONE 1...`;
-        document.getElementById('p1-ready-badge').classList.add('hidden');
+        this.p1Slot?.classList.remove('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+        this.p1Slot?.classList.add('border-white/10', 'bg-slate-900/40');
+        if (this.p1Status) this.p1Status.innerHTML = `WAITING FOR PHONE 1...`;
+        document.getElementById('p1-ready-badge')?.classList.add('hidden');
       } else {
-        this.p2Slot.classList.remove('border-pink-500', 'bg-pink-950/30');
-        this.p2Slot.classList.add('border-white/10', 'bg-slate-900/40');
-        this.p2Status.innerHTML = `WAITING FOR PHONE 2...`;
-        document.getElementById('p2-ready-badge').classList.add('hidden');
+        this.p2Slot?.classList.remove('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+        this.p2Slot?.classList.add('border-white/10', 'bg-slate-900/40');
+        if (this.p2Status) this.p2Status.innerHTML = `WAITING FOR PHONE 2 (OR AI BOT)...`;
+        document.getElementById('p2-ready-badge')?.classList.add('hidden');
       }
       this.checkStartReadiness();
     });
@@ -114,61 +117,67 @@ class AirConsoleHost {
   }
 
   checkStartReadiness() {
-    // Enable start button if at least 1 player connected, or show 2 connected
     const pCount = (this.players[1] ? 1 : 0) + (this.players[2] ? 1 : 0);
     const countBadge = document.getElementById('connected-count-badge');
-    if (countBadge) countBadge.textContent = `${pCount}/2 PLAYERS READY`;
+    if (countBadge) {
+      countBadge.textContent = pCount === 2 ? '2/2 PLAYERS CONNECTED' :
+                               pCount === 1 ? '1 PLAYER CONNECTED (AI BOT READY)' : '0/2 PLAYERS';
+    }
 
-    if (pCount >= 1) {
-      this.startGameBtn.removeAttribute('disabled');
-      this.startGameBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-      this.startGameBtn.classList.add('shadow-[0_0_30px_rgba(0,240,255,0.4)]', 'hover:scale-105');
+    if (this.startGameBtn) {
+      if (pCount === 2) {
+        this.startGameBtn.textContent = 'START 2-PLAYER BATTLE ⚡';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-pink-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_35px_rgba(0,240,255,0.5)] hover:brightness-110 active:scale-95 cursor-pointer';
+      } else if (pCount === 1) {
+        this.startGameBtn.textContent = 'START GAME (PLAYER 1 VS AI BOT) 🤖';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_30px_rgba(0,255,136,0.4)] hover:brightness-110 active:scale-95 cursor-pointer';
+      } else {
+        this.startGameBtn.textContent = 'START (KEYBOARD / SIMULATOR) ⚡';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-orbitron font-bold text-sm tracking-widest uppercase transition-all cursor-pointer border border-white/20';
+      }
     }
   }
 
   bindUiEvents() {
-    // Game selection cards
     this.gameSelectorBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        window.sounds.playClick();
-        this.gameSelectorBtns.forEach(b => b.classList.remove('ring-2', 'ring-cyan-400', 'bg-cyan-500/10'));
-        btn.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-500/10');
+        window.sounds?.playClick();
+        this.gameSelectorBtns.forEach(b => {
+          b.classList.remove('ring-2', 'ring-cyan-400', 'bg-cyan-500/10', 'border-cyan-400');
+          b.classList.add('border-white/10');
+        });
+        btn.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-500/10', 'border-cyan-400');
+        btn.classList.remove('border-white/10');
         this.currentGameType = btn.dataset.game;
       });
     });
 
-    // Start game button
-    this.startGameBtn.addEventListener('click', () => {
-      window.sounds.playClick();
+    this.startGameBtn?.addEventListener('click', () => {
+      window.sounds?.playClick();
       this.launchGame();
     });
 
-    // Rematch button on victory screen
     document.getElementById('rematch-btn')?.addEventListener('click', () => {
-      window.sounds.playClick();
+      window.sounds?.playClick();
       this.rematch();
     });
 
-    // Return to lobby button
     document.getElementById('lobby-btn')?.addEventListener('click', () => {
-      window.sounds.playClick();
+      window.sounds?.playClick();
       this.returnToLobby();
     });
 
-    // In-game Exit button
     document.getElementById('exit-game-btn')?.addEventListener('click', () => {
-      window.sounds.playClick();
+      window.sounds?.playClick();
       this.returnToLobby();
     });
 
-    // Audio mute button
     const muteBtn = document.getElementById('mute-toggle-btn');
     muteBtn?.addEventListener('click', () => {
-      const isMuted = window.sounds.toggleMute();
+      const isMuted = window.sounds?.toggleMute();
       muteBtn.textContent = isMuted ? '🔇 MUTED' : '🔊 SOUND ON';
     });
 
-    // Copy URL button
     document.getElementById('copy-url-btn')?.addEventListener('click', () => {
       if (this.controllerUrl) {
         navigator.clipboard.writeText(this.controllerUrl);
@@ -180,22 +189,18 @@ class AirConsoleHost {
       }
     });
 
-    // Dual Phone Simulator popups
     document.getElementById('open-dual-sim-btn')?.addEventListener('click', () => {
-      window.sounds.playClick();
+      window.sounds?.playClick();
       if (this.controllerUrl) {
-        window.open(this.controllerUrl, 'P1_Sim', 'width=440,height=700,left=40,top=80');
+        window.open(this.controllerUrl, 'JoyCon_1', 'width=460,height=720,left=30,top=60');
         setTimeout(() => {
-          window.open(this.controllerUrl, 'P2_Sim', 'width=440,height=700,left=520,top=80');
+          window.open(this.controllerUrl, 'JoyCon_2', 'width=460,height=720,left=520,top=60');
         }, 350);
       }
     });
   }
 
   bindKeyboardControls() {
-    // Allows keyboard testing directly on the laptop:
-    // P1: WASD + Space (Fire) + Shift (Boost) + E (Shield)
-    // P2: Arrow keys + Enter (Fire) + Right Ctrl (Boost) + Right Shift (Shield)
     const keysDown = {};
 
     window.addEventListener('keydown', (e) => {
@@ -226,8 +231,12 @@ class AirConsoleHost {
       x: p1X,
       y: p1Y,
       fire: !!keys['Space'],
+      btnA: !!keys['Space'],
       boost: !!keys['ShiftLeft'],
-      shield: !!keys['KeyE']
+      btnB: !!keys['ShiftLeft'],
+      shield: !!keys['KeyE'],
+      btnX: !!keys['KeyE'],
+      btnY: !!keys['KeyQ']
     });
 
     // Player 2 (Arrows)
@@ -242,8 +251,12 @@ class AirConsoleHost {
       x: p2X,
       y: p2Y,
       fire: !!keys['Enter'] || !!keys['Numpad0'],
+      btnA: !!keys['Enter'] || !!keys['Numpad0'],
       boost: !!keys['ControlRight'],
-      shield: !!keys['ShiftRight']
+      btnB: !!keys['ControlRight'],
+      shield: !!keys['ShiftRight'],
+      btnX: !!keys['ShiftRight'],
+      btnY: !!keys['Slash']
     });
   }
 
@@ -263,7 +276,6 @@ class AirConsoleHost {
     this.scores = { 1: 0, 2: 0 };
     this.updateScoreHud();
 
-    // Broadcast game start to phones
     this.socket.emit('broadcast-to-controllers', {
       type: 'game-start',
       payload: { game: this.currentGameType }
@@ -282,10 +294,9 @@ class AirConsoleHost {
       if (isMatchOver) {
         this.showVictoryScreen(winnerId);
       } else {
-        // Next round
         setTimeout(() => {
-          this.activeGame.resetRoundPositions();
-          this.activeGame.startCountdown();
+          this.activeGame.resetRoundPositions?.();
+          this.activeGame.startCountdown?.();
         }, 800);
       }
     };
@@ -294,16 +305,28 @@ class AirConsoleHost {
       this.syncToMobile(pNum, type, data);
     };
 
-    if (this.currentGameType === 'tank') {
-      document.getElementById('current-game-title').textContent = 'CYBER BUMPERS: NEON TANKS';
+    const titleEl = document.getElementById('current-game-title');
+
+    if (this.currentGameType === 'kart') {
+      if (titleEl) titleEl.textContent = '🏎️ NEON KART: CYBER RACERS 3D';
+      this.activeGame = new KartGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
+    } else if (this.currentGameType === 'bomb') {
+      if (titleEl) titleEl.textContent = '💣 SUPER BOMB BRAWLERS 3D';
+      this.activeGame = new BombGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
+    } else if (this.currentGameType === 'tank') {
+      if (titleEl) titleEl.textContent = '🚀 CYBER TANK SHOWDOWN 3D';
       this.activeGame = new TankGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
+      // If Player 2 is not connected, enable AI bot
+      if (!this.players[2]) {
+        this.activeGame.p2IsBot = true;
+      }
     } else {
-      document.getElementById('current-game-title').textContent = 'HYPER PONG 3D: CYBER SLAM';
-      this.activeGame = new PongGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
+      if (titleEl) titleEl.textContent = '🎮 UNIVERSAL PC GAMEPAD MODE';
+      this.activeGame = new GamepadMode(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
     }
 
     this.activeGame.start();
-    this.activeGame.startCountdown();
+    this.activeGame.startCountdown?.();
   }
 
   updateScoreHud() {
@@ -314,29 +337,10 @@ class AirConsoleHost {
   }
 
   showVictoryScreen(winnerId) {
-    window.sounds.playVictory();
+    window.sounds?.playVictory();
 
-    // Trigger celebration confetti
     if (window.confetti) {
-      window.confetti({
-        particleCount: 120,
-        spread: 90,
-        origin: { y: 0.6 }
-      });
-      setTimeout(() => {
-        window.confetti({
-          particleCount: 80,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 }
-        });
-        window.confetti({
-          particleCount: 80,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 }
-        });
-      }, 400);
+      window.confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
     }
 
     const modal = document.getElementById('victory-modal');
@@ -344,18 +348,21 @@ class AirConsoleHost {
     const winnerSub = document.getElementById('winner-sub');
 
     if (winnerId === 1) {
-      winnerBanner.textContent = 'PLAYER 1 WINS!';
-      winnerBanner.className = 'font-black text-6xl tracking-wider text-cyan-400 drop-shadow-[0_0_35px_#00f0ff] mb-2';
-      winnerSub.textContent = 'Electric Cyan Champion of the Arena';
+      if (winnerBanner) {
+        winnerBanner.textContent = 'PLAYER 1 WINS!';
+        winnerBanner.className = 'font-orbitron font-black text-6xl tracking-wider text-cyan-400 drop-shadow-[0_0_35px_#00f0ff] mb-2';
+      }
+      if (winnerSub) winnerSub.textContent = 'Joy-Con Cyan Champion!';
     } else {
-      winnerBanner.textContent = 'PLAYER 2 WINS!';
-      winnerBanner.className = 'font-black text-6xl tracking-wider text-pink-500 drop-shadow-[0_0_35px_#ff007f] mb-2';
-      winnerSub.textContent = 'Neon Magenta Champion of the Arena';
+      if (winnerBanner) {
+        winnerBanner.textContent = 'PLAYER 2 WINS!';
+        winnerBanner.className = 'font-orbitron font-black text-6xl tracking-wider text-pink-500 drop-shadow-[0_0_35px_#ff0055] mb-2';
+      }
+      if (winnerSub) winnerSub.textContent = 'Joy-Con Pink Champion!';
     }
 
-    modal.classList.remove('hidden');
+    modal?.classList.remove('hidden');
 
-    // Broadcast victory to mobile controllers
     this.socket.emit('broadcast-to-controllers', {
       type: 'game-over',
       payload: { winnerId, scores: this.scores }
@@ -383,7 +390,6 @@ class AirConsoleHost {
   }
 }
 
-// Instantiate host on load
 window.addEventListener('DOMContentLoaded', () => {
   window.airConsole = new AirConsoleHost();
 });

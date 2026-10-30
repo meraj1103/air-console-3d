@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ AIR-CONSOLE 3D | Cyber Arcade</title>
+  <title>⚡ AIR-CONSOLE 3D | Arcade Console Hub</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Three.js (Served locally from node_modules) -->
@@ -16,31 +16,31 @@
   <link rel="stylesheet" href="/css/screen.css">
 </head>
 <body class="bg-[#050811] text-slate-100 flex flex-col h-screen overflow-hidden select-none">
-  <!-- CRT Scanline effect -->
+  <!-- Scanline effect -->
   <div class="scanline-overlay"></div>
 
-  <!-- Top Navigation Header -->
-  <header class="h-16 border-b border-white/10 bg-slate-950/70 backdrop-blur-md px-8 flex items-center justify-between z-30 shrink-0">
+  <!-- Top Console Status Bar (Nintendo Switch style) -->
+  <header class="h-16 border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-8 flex items-center justify-between z-30 shrink-0">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-pink-500 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)]">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-pink-500 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)]">
         <span class="text-xl">⚡</span>
       </div>
       <div>
         <h1 class="font-orbitron font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-500">
           AIR-CONSOLE 3D
         </h1>
-        <p class="text-[10px] tracking-widest text-cyan-400/80 uppercase font-mono">Mobile-Powered Dual Console Arcade</p>
+        <p class="text-[10px] tracking-widest text-cyan-400/80 uppercase font-mono">Mobile Joy-Con Party Console OS</p>
       </div>
     </div>
 
     <!-- Center Room Badge -->
     <div class="flex items-center gap-4">
-      <div class="flex items-center bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-1.5 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
-        <span class="text-xs text-slate-400 uppercase tracking-widest mr-2.5 font-mono">ROOM CODE:</span>
+      <div class="flex items-center bg-slate-900/90 border border-cyan-500/40 rounded-xl px-4 py-1.5 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+        <span class="text-xs text-slate-400 uppercase tracking-widest mr-2.5 font-mono">ROOM PIN:</span>
         <span id="room-code-display" class="font-orbitron text-2xl font-black text-cyan-400 tracking-widest glow-cyan">----</span>
       </div>
       <div id="connected-count-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold tracking-wider bg-slate-900/80 border border-white/10 text-slate-300">
-        0/2 PLAYERS READY
+        0/2 PLAYERS
       </div>
     </div>
 
@@ -50,7 +50,7 @@
         🔊 SOUND ON
       </button>
       <button onclick="document.getElementById('help-modal').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-pink-500 text-xs font-mono text-slate-300 hover:text-white transition">
-        ⌨️ KEYBOARD FALLBACK
+        ⌨️ KEYBOARD CONTROLS
       </button>
     </div>
   </header>
@@ -58,47 +58,46 @@
   <!-- Main View Container -->
   <main class="flex-1 relative overflow-hidden flex flex-col">
     <!-- ============================================== -->
-    <!-- 1. LOBBY VIEW (Waiting for Phones & Room Setup) -->
+    <!-- 1. LOBBY VIEW (Game Selection & QR Connection) -->
     <!-- ============================================== -->
     <div id="lobby-view" class="flex-1 flex p-8 gap-8 max-w-7xl mx-auto w-full items-center justify-center">
-      <!-- Left Column: Connection Instructions & QR Code -->
-      <div class="w-1/2 flex flex-col items-center justify-center">
-        <div class="cyber-card p-8 rounded-3xl w-full max-w-md flex flex-col items-center text-center relative border border-cyan-500/30">
+      <!-- Left Column: QR Code & Mobile Connection -->
+      <div class="w-2/5 flex flex-col items-center justify-center">
+        <div class="cyber-card p-7 rounded-3xl w-full flex flex-col items-center text-center relative border border-cyan-500/30">
           <div class="absolute -top-3 px-4 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs font-mono tracking-widest">
             STEP 1: CONNECT PHONES
           </div>
 
-          <p class="text-sm text-slate-300 mt-2 mb-4 font-mono">
+          <p class="text-xs text-slate-300 mt-2 mb-3 font-mono">
             Scan with your phone camera or visit on mobile browser:
           </p>
 
-          <!-- Animated Neon QR Frame -->
-          <div class="relative p-3.5 rounded-2xl bg-slate-950 border-2 border-cyan-400 shadow-[0_0_30px_rgba(0,240,255,0.25)] mb-4 group">
-            <img id="qr-code-img" src="" alt="Connect QR Code" class="w-56 h-56 rounded-lg object-contain bg-slate-950">
-            <div class="absolute inset-0 rounded-2xl border border-white/20 pointer-events-none"></div>
+          <!-- Animated QR Frame -->
+          <div class="relative p-3 rounded-2xl bg-slate-950 border-2 border-cyan-400 shadow-[0_0_30px_rgba(0,240,255,0.25)] mb-3">
+            <img id="qr-code-img" src="" alt="Connect QR Code" class="w-48 h-48 rounded-lg object-contain bg-slate-950">
           </div>
 
           <!-- URL Pill with Copy button -->
-          <div class="w-full bg-slate-950/90 border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-2 mb-3">
-            <span id="connection-url" class="font-mono text-xs text-cyan-300 truncate pl-2">http://...</span>
+          <div class="w-full bg-slate-950/90 border border-white/10 rounded-xl p-2 flex items-center justify-between gap-2 mb-2">
+            <span id="connection-url" class="font-mono text-[11px] text-cyan-300 truncate pl-2">http://...</span>
             <button id="copy-url-btn" class="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 rounded-lg text-xs font-mono text-cyan-300 transition shrink-0">
               COPY
             </button>
           </div>
-          <p id="copy-notice" class="text-[11px] text-emerald-400 font-mono opacity-0 transition-opacity">✓ Link copied to clipboard!</p>
+          <p id="copy-notice" class="text-[10px] text-emerald-400 font-mono opacity-0 transition-opacity">✓ Copied to clipboard!</p>
 
-          <!-- Quick Test Links (Open 2 tabs on laptop) -->
-          <div class="mt-4 pt-4 border-t border-white/10 w-full flex flex-col items-center gap-2.5">
+          <!-- Quick Test Dual Simulators -->
+          <div class="mt-3 pt-3 border-t border-white/10 w-full flex flex-col items-center gap-2">
             <button id="open-dual-sim-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 rounded-xl text-xs font-mono text-cyan-300 transition flex items-center justify-center gap-2">
               <span>📱📱</span>
               <span>Open 2 Phone Simulators Side-by-Side</span>
             </button>
             <div class="flex items-center gap-3">
-              <span class="text-[11px] text-slate-400 font-mono">Or open tabs:</span>
-              <a id="test-p1-link" href="#" target="_blank" class="px-2 py-0.5 text-[11px] bg-slate-900 hover:bg-cyan-900/40 border border-cyan-500/30 rounded text-cyan-300 font-mono">
+              <span class="text-[10px] text-slate-400 font-mono">Or tabs:</span>
+              <a id="test-p1-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-cyan-900/40 border border-cyan-500/30 rounded text-cyan-300 font-mono">
                 Phone 1 Tab ↗
               </a>
-              <a id="test-p2-link" href="#" target="_blank" class="px-2 py-0.5 text-[11px] bg-slate-900 hover:bg-pink-900/40 border border-pink-500/30 rounded text-pink-300 font-mono">
+              <a id="test-p2-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-pink-900/40 border border-pink-500/30 rounded text-pink-300 font-mono">
                 Phone 2 Tab ↗
               </a>
             </div>
@@ -106,78 +105,100 @@
         </div>
       </div>
 
-      <!-- Right Column: Player Slots & Game Selector -->
-      <div class="w-1/2 flex flex-col gap-6">
+      <!-- Right Column: Player Slots & 4 Games Library -->
+      <div class="w-3/5 flex flex-col gap-5">
         <!-- Player Slots -->
         <div class="grid grid-cols-2 gap-4">
           <!-- Player 1 Slot -->
-          <div id="player1-slot" class="cyber-card p-5 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-mono tracking-widest text-cyan-400 font-bold uppercase">PLAYER 1 [CYAN]</span>
+          <div id="player1-slot" class="cyber-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono tracking-widest text-cyan-400 font-bold uppercase">JOY-CON 1 [CYAN]</span>
               <span id="p1-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">READY</span>
             </div>
-            <div class="flex items-center gap-3 my-2">
-              <div class="w-12 h-12 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-2xl shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(0,240,255,0.2)]">
                 🎮
               </div>
               <div>
                 <p id="p1-status" class="text-xs font-mono text-slate-400">WAITING FOR PHONE 1...</p>
-                <p class="text-[11px] text-slate-500 font-mono mt-0.5">Controls Left Tank / Paddle</p>
+                <p class="text-[10px] text-slate-500 font-mono">Controls Left Kart / Tank</p>
               </div>
             </div>
           </div>
 
           <!-- Player 2 Slot -->
-          <div id="player2-slot" class="cyber-card p-5 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-mono tracking-widest text-pink-400 font-bold uppercase">PLAYER 2 [MAGENTA]</span>
+          <div id="player2-slot" class="cyber-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono tracking-widest text-pink-400 font-bold uppercase">JOY-CON 2 [PINK]</span>
               <span id="p2-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300 border border-pink-400/40">READY</span>
             </div>
-            <div class="flex items-center gap-3 my-2">
-              <div class="w-12 h-12 rounded-xl bg-pink-950/60 border border-pink-500/40 flex items-center justify-center text-2xl shadow-[0_0_15px_rgba(255,0,127,0.2)]">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-pink-950/60 border border-pink-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(255,0,85,0.2)]">
                 📱
               </div>
               <div>
                 <p id="p2-status" class="text-xs font-mono text-slate-400">WAITING FOR PHONE 2...</p>
-                <p class="text-[11px] text-slate-500 font-mono mt-0.5">Controls Right Tank / Paddle</p>
+                <p class="text-[10px] text-slate-500 font-mono">Or Play Against AI Bot</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Game Selector Section -->
-        <div class="cyber-card p-6 rounded-3xl border border-white/10">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="font-orbitron text-sm font-bold tracking-wider text-slate-300 uppercase">SELECT GAME ARENA</h2>
-            <span class="text-xs font-mono text-cyan-400">3D REAL-TIME MULTIPLAYER</span>
+        <!-- 4 Games Library -->
+        <div class="cyber-card p-5 rounded-3xl border border-white/10">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-orbitron text-xs font-bold tracking-wider text-slate-300 uppercase">CONSOLE GAME LIBRARY</h2>
+            <span class="text-[11px] font-mono text-cyan-400">SELECT GAME TO LAUNCH</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <!-- Game Card 1: Tanks -->
-            <div data-game="tank" class="game-select-card cursor-pointer p-4 rounded-2xl bg-slate-900/80 border border-white/10 ring-2 ring-cyan-400 bg-cyan-500/10 transition-all hover:scale-[1.02]">
-              <div class="flex items-center gap-2 mb-1.5">
-                <span class="text-lg">🚀</span>
-                <h3 class="font-orbitron text-xs font-black text-cyan-400 tracking-wider">CYBER BUMPERS</h3>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <!-- Game 1: Kart Racing -->
+            <div data-game="kart" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border-2 border-cyan-400 ring-2 ring-cyan-400 bg-cyan-500/10 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-cyan-400 tracking-wider">🏎️ NEON KART 3D</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300 rounded">RACING</span>
               </div>
-              <p class="text-[11px] text-slate-400 leading-snug">
-                3D Tank duel with bouncing lasers, speed boost, force fields, EMP blast & powerups!
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Party racing track with drifting, nitro boost pads, missile attacks & 3 laps!
               </p>
             </div>
 
-            <!-- Game Card 2: Pong -->
-            <div data-game="pong" class="game-select-card cursor-pointer p-4 rounded-2xl bg-slate-900/80 border border-white/10 transition-all hover:scale-[1.02]">
-              <div class="flex items-center gap-2 mb-1.5">
-                <span class="text-lg">🏓</span>
-                <h3 class="font-orbitron text-xs font-black text-pink-400 tracking-wider">HYPER PONG 3D</h3>
+            <!-- Game 2: Bomberman Brawlers -->
+            <div data-game="bomb" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-pink-400 tracking-wider">💣 BOMB BRAWLERS 3D</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-pink-500/20 text-pink-300 rounded">ARCADE</span>
               </div>
-              <p class="text-[11px] text-slate-400 leading-snug">
-                High-speed neon air hockey with curve trajectories and mega smash shots!
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Destructible crates, powerups, ticking bombs & explosive chain reactions!
+              </p>
+            </div>
+
+            <!-- Game 3: Tank Showdown -->
+            <div data-game="tank" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-emerald-400 tracking-wider">🚀 CYBER TANKS 3D</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded">MECHA</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Action-cam hover tanks with bouncing plasma cannons, forcefields & AI bot!
+              </p>
+            </div>
+
+            <!-- Game 4: PC Gamepad Mode -->
+            <div data-game="gamepad" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-blue-400 tracking-wider">🎮 PC GAMEPAD MODE</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded">FOR PC GAMES</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Use your mobile phones as wireless controllers for ANY game on your laptop!
               </p>
             </div>
           </div>
 
           <!-- Big Start Button -->
-          <button id="start-game-btn" class="cyber-btn w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-pink-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:brightness-110 active:scale-95">
+          <button id="start-game-btn" class="cyber-btn w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-pink-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_35px_rgba(0,240,255,0.4)] hover:brightness-110 active:scale-95 cursor-pointer">
             START BATTLE NOW ⚡
           </button>
         </div>
@@ -188,26 +209,25 @@
     <!-- 2. GAME VIEW (Three.js 3D Arena & Realtime HUD) -->
     <!-- ============================================== -->
     <div id="game-view" class="hidden flex-1 relative w-full h-full">
-      <!-- 3D WebGL Canvas Container -->
+      <!-- 3D Canvas -->
       <div id="game-canvas-container" class="absolute inset-0 w-full h-full z-10"></div>
 
-      <!-- In-Game HUD Overlay -->
+      <!-- In-Game Top HUD Overlay -->
       <div class="absolute inset-x-0 top-0 p-6 flex justify-between items-start z-20 pointer-events-none">
         <!-- Player 1 HUD -->
-        <div class="cyber-card cyber-card-p1 p-4 rounded-2xl w-72 pointer-events-auto">
-          <div class="flex items-center justify-between mb-1.5">
+        <div class="cyber-card cyber-card-p1 p-4 rounded-2xl w-64 pointer-events-auto">
+          <div class="flex items-center justify-between mb-1">
             <span class="font-orbitron text-xs font-black text-cyan-400 tracking-wider">PLAYER 1</span>
             <span id="p1-score-display" class="font-orbitron text-xl font-black text-cyan-400 glow-cyan">0</span>
           </div>
-          <!-- HP Bar -->
-          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-cyan-500/40 overflow-hidden mb-1.5">
+          <!-- Gauge Bar -->
+          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-cyan-500/40 overflow-hidden mb-1">
             <div id="p1-hp-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-150 w-full shadow-[0_0_10px_#00f0ff]"></div>
           </div>
           <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
             <span id="p1-hp-text">100 HP</span>
-            <span>ENERGY BOOST</span>
+            <span>BOOST</span>
           </div>
-          <!-- Boost Bar -->
           <div class="w-full bg-slate-950 rounded-full h-1.5 p-0.5 border border-white/10 overflow-hidden mt-1">
             <div id="p1-boost-bar" class="bg-cyan-400 h-full rounded-full transition-all duration-75 w-full"></div>
           </div>
@@ -215,29 +235,28 @@
 
         <!-- Center Match Banner -->
         <div class="flex flex-col items-center pointer-events-auto">
-          <div class="px-5 py-1.5 rounded-full bg-slate-950/80 border border-white/20 text-xs font-orbitron font-bold tracking-widest text-yellow-300 shadow-[0_0_15px_rgba(255,230,0,0.2)]">
-            <span id="current-game-title">CYBER BUMPERS</span>
+          <div class="px-5 py-1.5 rounded-full bg-slate-950/90 border border-white/20 text-xs font-orbitron font-bold tracking-widest text-yellow-300 shadow-[0_0_15px_rgba(255,230,0,0.2)]">
+            <span id="current-game-title">NEON KART 3D</span>
           </div>
-          <button id="exit-game-btn" class="mt-2 text-[10px] font-mono text-slate-400 hover:text-white bg-slate-900/70 border border-white/10 px-3 py-1 rounded-lg transition">
-            ✕ RETURN TO LOBBY
+          <button id="exit-game-btn" class="mt-2 text-[10px] font-mono text-slate-300 hover:text-white bg-slate-900/80 border border-white/20 px-3 py-1 rounded-lg transition">
+            ✕ RETURN TO CONSOLE MENU
           </button>
         </div>
 
         <!-- Player 2 HUD -->
-        <div class="cyber-card cyber-card-p2 p-4 rounded-2xl w-72 pointer-events-auto text-right">
-          <div class="flex items-center justify-between mb-1.5">
+        <div class="cyber-card cyber-card-p2 p-4 rounded-2xl w-64 pointer-events-auto text-right">
+          <div class="flex items-center justify-between mb-1">
             <span id="p2-score-display" class="font-orbitron text-xl font-black text-pink-500 glow-pink">0</span>
             <span class="font-orbitron text-xs font-black text-pink-400 tracking-wider">PLAYER 2</span>
           </div>
-          <!-- HP Bar -->
-          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-pink-500/40 overflow-hidden mb-1.5">
-            <div id="p2-hp-bar" class="bg-gradient-to-l from-pink-500 to-rose-400 h-full rounded-full transition-all duration-150 w-full shadow-[0_0_10px_#ff007f] ml-auto"></div>
+          <!-- Gauge Bar -->
+          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-pink-500/40 overflow-hidden mb-1">
+            <div id="p2-hp-bar" class="bg-gradient-to-l from-pink-500 to-rose-400 h-full rounded-full transition-all duration-150 w-full shadow-[0_0_10px_#ff0055] ml-auto"></div>
           </div>
           <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
-            <span>ENERGY BOOST</span>
+            <span>BOOST</span>
             <span id="p2-hp-text">100 HP</span>
           </div>
-          <!-- Boost Bar -->
           <div class="w-full bg-slate-950 rounded-full h-1.5 p-0.5 border border-white/10 overflow-hidden mt-1">
             <div id="p2-boost-bar" class="bg-pink-400 h-full rounded-full transition-all duration-75 w-full ml-auto"></div>
           </div>
@@ -247,10 +266,10 @@
   </main>
 
   <!-- ============================================== -->
-  <!-- 3. COUNTDOWN OVERLAY ("3, 2, 1, FIGHT!")      -->
+  <!-- 3. COUNTDOWN OVERLAY ("3, 2, 1, GO!")         -->
   <!-- ============================================== -->
   <div id="countdown-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
-    <div id="countdown-text" class="countdown-num font-orbitron font-black text-9xl text-cyan-400 drop-shadow-[0_0_40px_#00f0ff]">
+    <div id="countdown-text" class="font-orbitron font-black text-9xl text-cyan-400 drop-shadow-[0_0_40px_#00f0ff]">
       3
     </div>
   </div>
@@ -265,11 +284,11 @@
         PLAYER 1 WINS!
       </h2>
       <p id="winner-sub" class="text-sm font-mono text-slate-300 mb-8">
-        Electric Cyan Champion of the Cyber Arena
+        Champion of the Cyber Arena!
       </p>
 
       <div class="flex gap-4 justify-center">
-        <button id="rematch-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-orbitron font-bold text-sm tracking-widest text-white shadow-[0_0_20px_rgba(0,240,255,0.4)]">
+        <button id="rematch-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-pink-500 font-orbitron font-bold text-sm tracking-widest text-white shadow-[0_0_20px_rgba(0,240,255,0.4)]">
           PLAY AGAIN 🔄
         </button>
         <button id="lobby-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/20 font-orbitron font-bold text-sm tracking-widest text-slate-200">
@@ -279,7 +298,7 @@
     </div>
   </div>
 
-  <!-- Keyboard Help Modal -->
+  <!-- Keyboard Controls Help Modal -->
   <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onclick="this.classList.add('hidden')">
     <div class="cyber-card p-8 rounded-3xl max-w-md w-full border border-white/20" onclick="event.stopPropagation()">
       <div class="flex justify-between items-center mb-4">
@@ -287,19 +306,21 @@
         <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-4 text-xs font-mono">
-        <div class="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30">
-          <p class="font-bold text-cyan-400 mb-1">PLAYER 1 (LEFT TANK):</p>
-          <p>• Move: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">W</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">A</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">S</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">D</kbd></p>
-          <p class="mt-1">• Fire Laser: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Spacebar</kbd></p>
-          <p class="mt-1">• Turbo Boost: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Left Shift</kbd></p>
-          <p class="mt-1">• Force Shield: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">E</kbd></p>
+        <div class="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30">
+          <p class="font-bold text-cyan-400 mb-1">PLAYER 1 [JOY-CON CYAN]:</p>
+          <p>• Move / Steer: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">W</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">A</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">S</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">D</kbd></p>
+          <p class="mt-1">• Button (A) [Accel / Bomb / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Spacebar</kbd></p>
+          <p class="mt-1">• Button (B) [Brake / Reverse]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Left Shift</kbd></p>
+          <p class="mt-1">• Button (X) [Item / Shield]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">E</kbd></p>
+          <p class="mt-1">• Button (Y) [Nitro Boost]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Q</kbd></p>
         </div>
-        <div class="p-3 rounded-xl bg-pink-950/30 border border-pink-500/30">
-          <p class="font-bold text-pink-400 mb-1">PLAYER 2 (RIGHT TANK):</p>
-          <p>• Move: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Arrow Keys</kbd></p>
-          <p class="mt-1">• Fire Laser: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Num 0</kbd></p>
-          <p class="mt-1">• Turbo Boost: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Ctrl</kbd></p>
-          <p class="mt-1">• Force Shield: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Shift</kbd></p>
+        <div class="p-3 rounded-xl bg-pink-950/40 border border-pink-500/30">
+          <p class="font-bold text-pink-400 mb-1">PLAYER 2 [JOY-CON PINK]:</p>
+          <p>• Move / Steer: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Arrow Keys</kbd></p>
+          <p class="mt-1">• Button (A) [Accel / Bomb / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Num 0</kbd></p>
+          <p class="mt-1">• Button (B) [Brake / Reverse]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Ctrl</kbd></p>
+          <p class="mt-1">• Button (X) [Item / Shield]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Shift</kbd></p>
+          <p class="mt-1">• Button (Y) [Nitro Boost]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">/</kbd></p>
         </div>
       </div>
     </div>

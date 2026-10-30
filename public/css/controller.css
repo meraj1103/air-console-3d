@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Rajdhani:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap');
 
 :root {
   --player-color: #00f0ff;
-  --bg-dark: #060913;
+  --bg-dark: #080c16;
 }
 
 * {
@@ -29,7 +29,16 @@ h1, h2, h3, .font-orbitron {
   font-family: 'Orbitron', monospace;
 }
 
-/* Joystick Styling */
+/* Joy-Con Ergonomic Grips */
+.joycon-grip-left {
+  background: radial-gradient(circle at 10% 50%, rgba(0, 240, 255, 0.15), transparent 70%);
+}
+
+.joycon-grip-right {
+  background: radial-gradient(circle at 90% 50%, rgba(255, 0, 85, 0.15), transparent 70%);
+}
+
+/* Analog Joystick */
 #joystick-zone {
   position: relative;
   width: 100%;
@@ -38,14 +47,14 @@ h1, h2, h3, .font-orbitron {
 
 #joystick-base {
   position: absolute;
-  width: 130px;
-  height: 130px;
-  margin-left: -65px;
-  margin-top: -65px;
+  width: 140px;
+  height: 140px;
+  margin-left: -70px;
+  margin-top: -70px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 24, 48, 0.6) 0%, rgba(5, 10, 20, 0.9) 100%);
+  background: radial-gradient(circle, rgba(18, 28, 50, 0.8) 0%, rgba(6, 12, 24, 0.95) 100%);
   border: 2px solid var(--player-color);
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.35), inset 0 0 20px rgba(0, 240, 255, 0.2);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -55,55 +64,85 @@ h1, h2, h3, .font-orbitron {
 #joystick-base::after {
   content: '';
   position: absolute;
-  width: 70px;
-  height: 70px;
+  width: 75px;
+  height: 75px;
   border-radius: 50%;
-  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
 }
 
 #joystick-handle {
-  width: 58px;
-  height: 58px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, var(--player-color) 70%, #0c182c 100%);
-  box-shadow: 0 0 20px var(--player-color), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+  background: radial-gradient(circle, #ffffff 0%, var(--player-color) 65%, #0a1424 100%);
+  box-shadow: 0 0 25px var(--player-color), inset 0 2px 5px rgba(255, 255, 255, 0.9);
   pointer-events: none;
   transition: transform 0.04s ease-out;
 }
 
-/* Action Buttons */
-.gamepad-btn {
+/* Diamond Action Buttons */
+.face-btn {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   touch-action: manipulation;
-  transition: transform 0.08s ease-out, filter 0.08s ease-out, box-shadow 0.08s ease-out;
+  transition: transform 0.08s ease-out, filter 0.08s ease-out;
   box-shadow: 
-    inset 0 2px 0 0 rgba(255, 255, 255, 0.4),
-    0 8px 24px -4px rgba(0, 0, 0, 0.8);
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    0 8px 20px -3px rgba(0, 0, 0, 0.9);
 }
 
-.gamepad-btn:active {
-  transform: scale(0.92) !important;
+.face-btn:active {
+  transform: scale(0.9) !important;
+  filter: brightness(1.35);
+}
+
+.btn-a {
+  background: linear-gradient(135deg, #00ff88 0%, #009944 100%);
+  border: 2px solid #55ffaa;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.btn-b {
+  background: linear-gradient(135deg, #ff0055 0%, #99002b 100%);
+  border: 2px solid #ff6699;
+  box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+}
+
+.btn-x {
+  background: linear-gradient(135deg, #00d4ff 0%, #0055bb 100%);
+  border: 2px solid #66e0ff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.btn-y {
+  background: linear-gradient(135deg, #ffe600 0%, #bb9900 100%);
+  border: 2px solid #fff066;
+  box-shadow: 0 0 20px rgba(255, 230, 0, 0.4);
+}
+
+/* Shoulder Bumpers */
+.shoulder-btn {
+  background: linear-gradient(180deg, #222d45 0%, #111726 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  touch-action: manipulation;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(0, 0, 0, 0.6);
+  transition: transform 0.08s ease-out;
+}
+
+.shoulder-btn:active {
+  transform: scale(0.92);
   filter: brightness(1.3);
-}
-
-.btn-fire-glow {
-  background: linear-gradient(135deg, #ff0055 0%, #ff5500 100%);
-  box-shadow: 0 0 25px rgba(255, 0, 85, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5);
-}
-
-.btn-boost-glow {
-  background: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
-  box-shadow: 0 0 25px rgba(0, 212, 255, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5);
-}
-
-.btn-shield-glow {
-  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5);
 }
 
 /* Scanline */
 .phone-scanline {
-  background: linear-gradient(rgba(18, 16, 38, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+  background: linear-gradient(rgba(18, 16, 38, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
   background-size: 100% 3px;
   pointer-events: none;
 }
-

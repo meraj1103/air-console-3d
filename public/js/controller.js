@@ -1,5 +1,5 @@
-// Mobile Console Controller Engine
-// Manages zero-latency touch controls, virtual joystick, haptics, and gyro
+// 🎮 AIR-JOYCON: Mobile Console Gamepad Engine
+// High-frequency, zero-latency touch controls, diamond buttons, haptics & gyro
 
 class MobileGamepad {
   constructor() {
@@ -13,9 +13,12 @@ class MobileGamepad {
     this.input = {
       x: 0,
       y: 0,
-      fire: false,
-      boost: false,
-      shield: false,
+      btnA: false,
+      btnB: false,
+      btnX: false,
+      btnY: false,
+      btnL: false,
+      btnR: false,
       tiltX: 0,
       tiltY: 0
     };
@@ -48,15 +51,17 @@ class MobileGamepad {
     this.pingBadge = document.getElementById('ping-badge');
     this.hpBar = document.getElementById('mobile-hp-bar');
     this.hpText = document.getElementById('mobile-hp-text');
-    this.boostBar = document.getElementById('mobile-boost-bar');
 
     this.stickZone = document.getElementById('joystick-zone');
     this.stickBase = document.getElementById('joystick-base');
     this.stickHandle = document.getElementById('joystick-handle');
 
-    this.fireBtn = document.getElementById('btn-fire');
-    this.boostBtn = document.getElementById('btn-boost');
-    this.shieldBtn = document.getElementById('btn-shield');
+    this.btnA = document.getElementById('btn-a');
+    this.btnB = document.getElementById('btn-b');
+    this.btnX = document.getElementById('btn-x');
+    this.btnY = document.getElementById('btn-y');
+    this.btnL1 = document.getElementById('btn-l1');
+    this.btnR1 = document.getElementById('btn-r1');
 
     this.gyroToggleBtn = document.getElementById('gyro-toggle-btn');
     this.fullscreenBtn = document.getElementById('fullscreen-btn');
@@ -68,9 +73,7 @@ class MobileGamepad {
       if ('wakeLock' in navigator) {
         this.wakeLock = await navigator.wakeLock.request('screen');
       }
-    } catch (e) {
-      console.log('Wake Lock unavailable:', e);
-    }
+    } catch (e) {}
   }
 
   checkUrlParams() {
@@ -93,14 +96,10 @@ class MobileGamepad {
       this.joinRoom(code);
     });
 
-    // Enter key submit
     this.roomInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        this.joinBtn?.click();
-      }
+      if (e.key === 'Enter') this.joinBtn?.click();
     });
 
-    // Fullscreen toggle
     this.fullscreenBtn?.addEventListener('click', () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -109,12 +108,10 @@ class MobileGamepad {
       }
     });
 
-    // Gyro toggle
     this.gyroToggleBtn?.addEventListener('click', () => {
       this.toggleGyro();
     });
 
-    // Rematch button on mobile
     document.getElementById('mobile-rematch-btn')?.addEventListener('click', () => {
       this.socket.emit('player-action', { action: 'rematch' });
       this.rematchModal.classList.add('hidden');
@@ -133,7 +130,7 @@ class MobileGamepad {
     this.socket.emit('join-room', {
       roomCode: code,
       deviceName: navigator.userAgent.includes('iPhone') ? 'iPhone' : 
-                  navigator.userAgent.includes('Android') ? 'Android' : 'Mobile Controller'
+                  navigator.userAgent.includes('Android') ? 'Android' : 'Joy-Con Controller'
     }, (res) => {
       if (res && res.success) {
         this.playerNumber = res.playerNumber;
@@ -141,7 +138,7 @@ class MobileGamepad {
         this.isConnected = true;
         this.setupGamepadView();
       } else {
-        this.showError(res ? res.error : 'Connection failed. Check room code.');
+        this.showError(res ? res.error : 'Connection failed. Check room code on laptop.');
       }
     });
   }
@@ -150,24 +147,21 @@ class MobileGamepad {
     this.joinScreen.classList.add('hidden');
     this.gamepadScreen.classList.remove('hidden');
 
-    // Setup player styling & theme
     if (this.playerNumber === 1) {
-      this.playerBadge.textContent = 'PLAYER 1';
-      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-cyan-500/20 text-cyan-400 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.3)]';
+      this.playerBadge.textContent = 'JOY-CON 1 [CYAN]';
+      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-cyan-500/20 text-cyan-400 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]';
       this.gamepadScreen.style.setProperty('--player-color', '#00f0ff');
     } else {
-      this.playerBadge.textContent = 'PLAYER 2';
-      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-pink-500/20 text-pink-400 border border-pink-400/40 shadow-[0_0_15px_rgba(255,0,127,0.3)]';
-      this.gamepadScreen.style.setProperty('--player-color', '#ff007f');
+      this.playerBadge.textContent = 'JOY-CON 2 [PINK]';
+      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-pink-500/20 text-pink-400 border border-pink-400/50 shadow-[0_0_15px_rgba(255,0,85,0.35)]';
+      this.gamepadScreen.style.setProperty('--player-color', '#ff0055');
     }
 
-    // Gentle tactile rumble on connect
     this.triggerHaptic([40, 20, 60]);
     window.sounds?.playJoin();
   }
 
   bindSocketEvents() {
-    // Host sync events (Haptics, HP, Game Over)
     this.socket.on('host-sync', ({ type, payload }) => {
       if (type === 'haptic' && payload && payload.pattern) {
         this.triggerHaptic(payload.pattern);
@@ -177,6 +171,7 @@ class MobileGamepad {
         this.showRematchDialog(payload.winnerId);
       } else if (type === 'game-start') {
         this.rematchModal.classList.add('hidden');
+        this.adaptButtonLabels(payload.game);
         this.triggerHaptic([30, 30, 60]);
       } else if (type === 'return-lobby') {
         this.rematchModal.classList.add('hidden');
@@ -189,16 +184,38 @@ class MobileGamepad {
     });
   }
 
-  updateMobileHud({ hp, boostEnergy, shieldActive }) {
+  adaptButtonLabels(game) {
+    const lA = document.getElementById('label-a');
+    const lB = document.getElementById('label-b');
+    const lX = document.getElementById('label-x');
+    const lY = document.getElementById('label-y');
+
+    if (game === 'kart') {
+      if (lA) lA.textContent = 'ACCEL';
+      if (lB) lB.textContent = 'BRAKE';
+      if (lX) lX.textContent = 'ITEM';
+      if (lY) lY.textContent = 'NITRO';
+    } else if (game === 'bomb') {
+      if (lA) lA.textContent = 'BOMB';
+      if (lB) lB.textContent = 'RUN';
+      if (lX) lX.textContent = 'PUNCH';
+      if (lY) lY.textContent = 'POWER';
+    } else if (game === 'tank') {
+      if (lA) lA.textContent = 'FIRE';
+      if (lB) lB.textContent = 'REV';
+      if (lX) lX.textContent = 'SHIELD';
+      if (lY) lY.textContent = 'BOOST';
+    } else {
+      if (lA) lA.textContent = 'A';
+      if (lB) lB.textContent = 'B';
+      if (lX) lX.textContent = 'X';
+      if (lY) lY.textContent = 'Y';
+    }
+  }
+
+  updateMobileHud({ hp }) {
     if (this.hpBar) this.hpBar.style.width = `${Math.max(0, hp)}%`;
     if (this.hpText) this.hpText.textContent = `${Math.max(0, hp)}%`;
-    if (this.boostBar) this.boostBar.style.width = `${boostEnergy}%`;
-
-    if (shieldActive) {
-      this.shieldBtn.classList.add('ring-4', 'ring-cyan-300', 'animate-pulse');
-    } else {
-      this.shieldBtn.classList.remove('ring-4', 'ring-cyan-300', 'animate-pulse');
-    }
   }
 
   showRematchDialog(winnerId) {
@@ -213,14 +230,12 @@ class MobileGamepad {
 
   triggerHaptic(pattern) {
     if ('vibrate' in navigator) {
-      try {
-        navigator.vibrate(pattern);
-      } catch (e) {}
+      try { navigator.vibrate(pattern); } catch (e) {}
     }
   }
 
   bindTouchControls() {
-    // 1. Virtual Thumbstick Logic
+    // 1. Virtual Analog Thumbstick
     this.stickZone.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const touch = e.changedTouches[0];
@@ -261,7 +276,6 @@ class MobileGamepad {
           const hy = Math.sin(angle) * clampedDist;
           this.stickHandle.style.transform = `translate(${hx}px, ${hy}px)`;
 
-          // Normalize vector -1 to 1
           this.input.x = hx / this.stickRadius;
           this.input.y = hy / this.stickRadius;
 
@@ -288,7 +302,7 @@ class MobileGamepad {
     this.stickZone.addEventListener('touchend', endStick, { passive: false });
     this.stickZone.addEventListener('touchcancel', endStick, { passive: false });
 
-    // 2. Action Buttons
+    // 2. Action Face Buttons & Bumpers
     const bindBtn = (element, key, hapticLen = 20) => {
       if (!element) return;
       element.addEventListener('touchstart', (e) => {
@@ -309,7 +323,7 @@ class MobileGamepad {
       element.addEventListener('touchend', releaseBtn, { passive: false });
       element.addEventListener('touchcancel', releaseBtn, { passive: false });
 
-      // Mouse fallback for browser testing
+      // Mouse fallback
       element.addEventListener('mousedown', () => {
         element.classList.add('scale-90');
         this.input[key] = true;
@@ -324,20 +338,19 @@ class MobileGamepad {
       });
     };
 
-    bindBtn(this.fireBtn, 'fire', 25);
-    bindBtn(this.boostBtn, 'boost', 30);
-    bindBtn(this.shieldBtn, 'shield', 40);
+    bindBtn(this.btnA, 'btnA', 25);
+    bindBtn(this.btnB, 'btnB', 25);
+    bindBtn(this.btnX, 'btnX', 25);
+    bindBtn(this.btnY, 'btnY', 25);
+    bindBtn(this.btnL1, 'btnL', 30);
+    bindBtn(this.btnR1, 'btnR', 30);
   }
 
   toggleGyro() {
     if (!this.gyroEnabled) {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-          .then(res => {
-            if (res === 'granted') {
-              this.enableGyro();
-            }
-          })
+          .then(res => { if (res === 'granted') this.enableGyro(); })
           .catch(console.error);
       } else {
         this.enableGyro();
@@ -353,10 +366,8 @@ class MobileGamepad {
     this.gyroToggleBtn.textContent = '🧭 TILT: ON';
 
     this.gyroHandler = (e) => {
-      // Gamma: left/right tilt [-90, 90]
-      // Beta: front/back tilt [-180, 180]
       const gamma = e.gamma || 0;
-      const beta = (e.beta || 0) - 30; // 30 deg natural resting angle
+      const beta = (e.beta || 0) - 30;
       this.input.tiltX = gamma;
       this.input.tiltY = beta;
       this.sendInput();
@@ -382,9 +393,16 @@ class MobileGamepad {
     this.socket.emit('controller-input', {
       x: this.input.x,
       y: this.input.y,
-      fire: this.input.fire,
-      boost: this.input.boost,
-      shield: this.input.shield,
+      btnA: this.input.btnA,
+      btnB: this.input.btnB,
+      btnX: this.input.btnX,
+      btnY: this.input.btnY,
+      btnL: this.input.btnL,
+      btnR: this.input.btnR,
+      // Compatibility aliases
+      fire: this.input.btnA,
+      boost: this.input.btnB || this.input.btnY,
+      shield: this.input.btnX,
       tiltX: this.input.tiltX,
       tiltY: this.input.tiltY
     });
@@ -397,7 +415,7 @@ class MobileGamepad {
       this.socket.emit('ping-check', start, (timestamp) => {
         const latency = Date.now() - timestamp;
         if (this.pingBadge) {
-          this.pingBadge.innerHTML = `<span class="inline-block w-2 h-2 rounded-full ${latency < 40 ? 'bg-emerald-400' : 'bg-yellow-400'} animate-pulse mr-1.5"></span>${latency}ms`;
+          this.pingBadge.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full ${latency < 40 ? 'bg-emerald-400' : 'bg-yellow-400'} animate-pulse mr-1"></span>${latency}ms`;
         }
       });
     }, 2000);
