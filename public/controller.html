@@ -7,6 +7,8 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#080c16">
   <title>AirConsole Xbox Joy-Con Controller</title>
   <!-- Tailwind CSS -->
@@ -55,9 +57,15 @@
         CONNECT AS GAMEPAD ⚡
       </button>
 
-      <p class="text-[11px] text-slate-500 font-mono mt-6">
-        💡 Tip: Rotate phone to Landscape mode for the ultimate Xbox controller feel!
-      </p>
+      <!-- Fullscreen & Add to Home Screen Tips -->
+      <div class="mt-4 p-3 rounded-xl bg-slate-900/80 border border-white/10 text-[11px] text-slate-300 font-mono text-left space-y-1.5 w-full">
+        <p class="font-bold text-cyan-400 font-orbitron text-xs flex items-center gap-1">
+          <span>⛶</span> HOW TO GET 100% FULLSCREEN:
+        </p>
+        <p>• <b>Android:</b> Tap the 3 dots <b>⋮</b> → <b>"Install app"</b> or <b>"Add to Home Screen"</b>.</p>
+        <p>• <b>iPhone:</b> Tap Share <b>⎘</b> → <b>"Add to Home Screen"</b>.</p>
+        <p class="text-slate-400 text-[10px]">Or tap the cyan <b>⛶ FULLSCREEN</b> button once connected!</p>
+      </div>
     </div>
   </div>
 
@@ -213,8 +221,9 @@
         </button>
       </div>
 
-      <button id="fullscreen-btn" class="px-2 py-1 rounded bg-slate-900 border border-white/10 text-[9px] active:scale-95 cursor-pointer">
-        ⛶ FULLSCREEN
+      <button id="fullscreen-btn" class="px-3 py-1.5 rounded-lg bg-cyan-950/90 border border-cyan-400 text-cyan-300 font-orbitron font-bold text-[10px] active:scale-95 shadow-[0_0_12px_rgba(0,240,255,0.35)] flex items-center gap-1 cursor-pointer">
+        <span>⛶</span>
+        <span>FULLSCREEN</span>
       </button>
     </footer>
 

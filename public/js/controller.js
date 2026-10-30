@@ -86,6 +86,42 @@ class MobileGamepad {
     this.rematchModal = document.getElementById('mobile-rematch-modal');
   }
 
+  toggleFullscreen() {
+    const doc = document;
+    const docEl = doc.documentElement;
+
+    const req = docEl.requestFullscreen ||
+      docEl.webkitRequestFullscreen ||
+      docEl.webkitRequestFullScreen ||
+      docEl.mozRequestFullScreen ||
+      docEl.msRequestFullscreen;
+
+    const exit = doc.exitFullscreen ||
+      doc.webkitExitFullscreen ||
+      doc.mozCancelFullScreen ||
+      doc.msExitFullscreen;
+
+    const isFs = doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.webkitCurrentFullScreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement;
+
+    if (!isFs) {
+      if (req) {
+        req.call(docEl).then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    } else {
+      if (exit) {
+        exit.call(doc).catch(() => {});
+      }
+    }
+  }
+
   async requestWakeLock() {
     try {
       if ('wakeLock' in navigator) {
@@ -119,11 +155,7 @@ class MobileGamepad {
     });
 
     this.fullscreenBtn?.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
+      this.toggleFullscreen();
     });
 
     this.gyroToggleBtn?.addEventListener('click', () => {
