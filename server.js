@@ -38,7 +38,7 @@ function getBaseUrl(socket, req) {
   }
 
   const hostHeader = (socket ? socket.handshake?.headers?.host : req?.headers?.host) || '';
-  const proto = (socket ? socket.handshake?.headers?.['x-forwarded-proto'] : req?.headers?.['x-forwarded-proto']) 
+  const proto = (socket ? socket.handshake?.headers?.['x-forwarded-proto'] : req?.headers?.['x-forwarded-proto'])
     || ((hostHeader.includes('localhost') || hostHeader.includes('10.') || hostHeader.includes('192.168.')) ? 'http' : 'https');
 
   // If accessed from localhost directly, return local Wi-Fi IP so phones on LAN can reach it
@@ -112,10 +112,10 @@ function generateRoomCode() {
 io.on('connection', (socket) => {
   // Host creates room
   socket.on('create-room', async (requestedCode, callback) => {
-    let roomCode = (requestedCode && !rooms.has(requestedCode.toUpperCase())) 
-      ? requestedCode.toUpperCase() 
+    let roomCode = (requestedCode && !rooms.has(requestedCode.toUpperCase()))
+      ? requestedCode.toUpperCase()
       : generateRoomCode();
-    
+
     while (rooms.has(roomCode)) {
       roomCode = generateRoomCode();
     }
