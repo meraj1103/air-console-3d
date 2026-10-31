@@ -10,8 +10,9 @@ cd /d "%~dp0"
 :: Check if ViGEmBus driver is installed
 sc query ViGEmBus >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!] Installing ViGEmBus Xbox Controller driver for Split Screen...
-    start /wait ViGEmBus_Setup.exe
+    echo [!] Virtual Xbox Controller driver not detected.
+    echo Launching one-click installer...
+    call INSTALL_VIRTUAL_CONTROLLERS.bat
 )
 
 echo Starting Virtual Xbox 360 Controller Bridge...

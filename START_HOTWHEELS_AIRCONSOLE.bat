@@ -11,16 +11,9 @@ cd /d "%~dp0"
 :: Check if ViGEmBus driver is installed (required for 2-player split screen)
 sc query ViGEmBus >nul 2>&1
 if %errorlevel% neq 0 (
-    echo =====================================================================
-    echo   [!] XBOX VIRTUAL CONTROLLER DRIVER SETUP REQUIRED FOR SPLIT SCREEN
-    echo =====================================================================
-    echo  Hot Wheels Unleashed requires virtual gamepads for 2-player split screen.
-    echo  Launching driver installer... Please click 'Yes' on the prompt!
-    echo.
-    start /wait ViGEmBus_Setup.exe
-    echo  Driver installation complete!
-    echo =====================================================================
-    echo.
+    echo [!] Virtual Xbox Controller driver not detected.
+    echo Launching one-click installer...
+    call INSTALL_VIRTUAL_CONTROLLERS.bat
 )
 
 echo  [1/2] Starting Air-Console Server & Windows Game Controller Bridge...
