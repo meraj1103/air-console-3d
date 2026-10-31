@@ -52,6 +52,10 @@ class MobileGamepad {
     this.stickOrigin = { x: 0, y: 0 };
     this.stickRadius = 55;
 
+    // Rate-limiting & zero-lag network buffer
+    this.lastInputSentTime = 0;
+    this.inputThrottleTimeout = null;
+
     this.initElements();
     this.bindSocketEvents();
     this.bindTouchControls();
@@ -512,7 +516,8 @@ class MobileGamepad {
           this.input.x = hx / this.stickRadius;
           this.input.y = hy / this.stickRadius;
 
-          this.sendInput();
+          // Throttle continuous touchmove to 30ms to prevent buffer buildup on Render
+          this.sendInput(false);
           break;
         }
       }
@@ -526,7 +531,8 @@ class MobileGamepad {
           this.stickBase.classList.add('hidden');
           this.input.x = 0;
           this.input.y = 0;
-          this.sendInput();
+          // Send immediately on stick release so player stops instantly
+          this.sendInput(true);
           break;
         }
       }
@@ -543,14 +549,16 @@ class MobileGamepad {
         element.classList.add('scale-90', 'brightness-125');
         this.input[key] = true;
         this.triggerHaptic(hapticLen);
-        this.sendInput();
+        // Immediate send: Zero latency on button down!
+        this.sendInput(true);
       }, { passive: false });
 
       const releaseBtn = (e) => {
         e.preventDefault();
         element.classList.remove('scale-90', 'brightness-125');
         this.input[key] = false;
-        this.sendInput();
+        // Immediate send on button release
+        this.sendInput(true);
       };
 
       element.addEventListener('touchend', releaseBtn, { passive: false });
@@ -560,13 +568,13 @@ class MobileGamepad {
       element.addEventListener('mousedown', () => {
         element.classList.add('scale-90');
         this.input[key] = true;
-        this.sendInput();
+        this.sendInput(true);
       });
       window.addEventListener('mouseup', () => {
         element.classList.remove('scale-90');
         if (this.input[key]) {
           this.input[key] = false;
-          this.sendInput();
+          this.sendInput(true);
         }
       });
     };
@@ -813,43 +821,55 @@ class MobileGamepad {
     this.sendInput();
   }
 
-  sendInput() {
+  sendInput(immediate = false) {
     if (!this.isConnected) return;
+
+    const now = performance.now();
+    // For continuous analog movement (touchmove), throttle to 30ms (~33 updates/sec)
+    // For critical button actions (Attack, Jump, Slash), send immediately!
+    if (!immediate && (now - this.lastInputSentTime < 30)) {
+      if (!this.inputThrottleTimeout) {
+        this.inputThrottleTimeout = setTimeout(() => {
+          this.inputThrottleTimeout = null;
+          this.sendInput(true);
+        }, 30 - (now - this.lastInputSentTime));
+      }
+      return;
+    }
+
+    if (this.inputThrottleTimeout) {
+      clearTimeout(this.inputThrottleTimeout);
+      this.inputThrottleTimeout = null;
+    }
+    this.lastInputSentTime = now;
+
     let effectiveX = this.input.x;
-    // When gyro is active and touch stick is neutral, steer with gyro! (Never in fighting game)
     if (this.gyroEnabled && this.currentGame !== 'fighter' && Math.abs(effectiveX) < 0.1) {
       effectiveX = this.gyroNormalizedSteer;
     }
 
-    this.socket.emit('controller-input', {
-      x: effectiveX,
-      y: this.input.y,
-      btnRT: this.input.btnRT,
-      btnLT: this.input.btnLT,
-      btnRB: this.input.btnRB,
-      btnLB: this.input.btnLB,
-      btnA: this.input.btnA,
-      btnB: this.input.btnB,
-      btnX: this.input.btnX,
-      btnY: this.input.btnY,
-      select: this.input.select,
-      start: this.input.start,
-      // Named Aliases
-      gas: this.input.btnRT,
-      brake: this.input.btnLT,
-      boost: this.input.btnA,
-      dashLeft: this.input.btnX,
-      dashRight: this.input.btnB,
-      interact: this.input.btnY,
-      respawn: this.input.btnRB,
-      lookback: this.input.btnLB,
-      pause: this.input.start,
-      map: this.input.select,
-      // Compatibility
-      fire: this.input.btnA || this.input.btnRT,
-      tiltX: this.input.tiltX,
-      tiltY: this.input.tiltY
-    });
+    // High-speed, compact payload
+    const payload = {
+      x: Math.round(effectiveX * 100) / 100,
+      y: Math.round(this.input.y * 100) / 100,
+      btnA: !!this.input.btnA,
+      btnB: !!this.input.btnB,
+      btnX: !!this.input.btnX,
+      btnY: !!this.input.btnY,
+      btnRT: !!this.input.btnRT,
+      btnLT: !!this.input.btnLT,
+      btnRB: !!this.input.btnRB,
+      btnLB: !!this.input.btnLB,
+      fire: !!(this.input.btnA || this.input.btnRT),
+      jump: !!this.input.btnB
+    };
+
+    // Use volatile emit if available: Discards stale queued packets during network spikes!
+    if (this.socket.volatile) {
+      this.socket.volatile.emit('controller-input', payload);
+    } else {
+      this.socket.emit('controller-input', payload);
+    }
   }
 
   startPingLoop() {

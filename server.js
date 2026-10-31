@@ -311,10 +311,17 @@ io.on('connection', (socket) => {
     if (!socket.roomCode || !socket.playerNumber) return;
     const room = rooms.get(socket.roomCode);
     if (room && room.hostId) {
-      io.to(room.hostId).emit('player-input', {
-        playerNumber: socket.playerNumber,
-        ...inputData
-      });
+      if (io.to(room.hostId).volatile) {
+        io.to(room.hostId).volatile.emit('player-input', {
+          playerNumber: socket.playerNumber,
+          ...inputData
+        });
+      } else {
+        io.to(room.hostId).emit('player-input', {
+          playerNumber: socket.playerNumber,
+          ...inputData
+        });
+      }
     }
 
     // Direct hardware injection into Windows game (Hot Wheels)
