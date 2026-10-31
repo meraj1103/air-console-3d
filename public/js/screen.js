@@ -13,7 +13,7 @@ class AirConsoleHost {
     this.roomCode = null;
     this.controllerUrl = '';
     this.players = { 1: false, 2: false };
-    this.currentGameType = 'kart'; // Default to fast fun Kart Racing!
+    this.currentGameType = 'fighter'; // Default to fast fun Kart Racing!
     this.activeGame = null;
     this.scores = { 1: 0, 2: 0 };
     this.keyboardFallbackEnabled = true;
@@ -44,12 +44,46 @@ class AirConsoleHost {
     this.gameSelectorBtns = document.querySelectorAll('.game-select-card');
   }
 
+  setPlayerConnected(playerNumber, name) {
+    this.players[playerNumber] = true;
+    if (playerNumber === 1) {
+      this.p1Slot?.classList.add('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+      this.p1Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
+      if (this.p1Status) this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping mr-2"></span>JOY-CON 1: <b class="text-white">${name || 'Player 1'}</b>`;
+      document.getElementById('p1-ready-badge')?.classList.remove('hidden');
+    } else {
+      this.p2Slot?.classList.add('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+      this.p2Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
+      if (this.p2Status) this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping mr-2"></span>JOY-CON 2: <b class="text-white">${name || 'Player 2'}</b>`;
+      document.getElementById('p2-ready-badge')?.classList.remove('hidden');
+    }
+    this.checkStartReadiness();
+  }
+
+  setPlayerDisconnected(playerNumber) {
+    this.players[playerNumber] = false;
+    if (playerNumber === 1) {
+      this.p1Slot?.classList.remove('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+      this.p1Slot?.classList.add('border-white/10', 'bg-slate-900/40');
+      if (this.p1Status) this.p1Status.innerHTML = `WAITING FOR PHONE 1...`;
+      document.getElementById('p1-ready-badge')?.classList.add('hidden');
+    } else {
+      this.p2Slot?.classList.remove('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+      this.p2Slot?.classList.add('border-white/10', 'bg-slate-900/40');
+      if (this.p2Status) this.p2Status.innerHTML = `WAITING FOR PHONE 2 (OR AI BOT)...`;
+      document.getElementById('p2-ready-badge')?.classList.add('hidden');
+    }
+    this.checkStartReadiness();
+  }
+
   bindSocketEvents() {
     this.socket.on('connect', () => {
-      console.log('Connected to server. Creating room...');
-      this.socket.emit('create-room', null, (res) => {
+      const savedCode = sessionStorage.getItem('airconsole_room_code') || 'CYBER';
+      console.log('Connected to server. Using persistent room code:', savedCode);
+      this.socket.emit('create-room', savedCode, (res) => {
         if (res && res.success) {
           this.roomCode = res.roomCode;
+          sessionStorage.setItem('airconsole_room_code', this.roomCode);
           this.controllerUrl = res.controllerUrl;
 
           if (this.roomCodeEl) this.roomCodeEl.textContent = this.roomCode;
@@ -61,45 +95,29 @@ class AirConsoleHost {
           const testP2 = document.getElementById('test-p2-link');
           if (testP1) testP1.href = res.controllerUrl;
           if (testP2) testP2.href = res.controllerUrl;
+
+          // Seamlessly restore already connected players if re-attached
+          if (res.players) {
+            if (res.players[1] && res.players[1].socketId) {
+              this.setPlayerConnected(1, res.players[1].name);
+            }
+            if (res.players[2] && res.players[2].socketId) {
+              this.setPlayerConnected(2, res.players[2].name);
+            }
+          }
         }
       });
     });
 
     // Mobile player joined
     this.socket.on('player-joined', ({ playerNumber, name }) => {
-      this.players[playerNumber] = true;
+      this.setPlayerConnected(playerNumber, name);
       window.sounds?.playJoin();
-
-      if (playerNumber === 1) {
-        this.p1Slot?.classList.add('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
-        this.p1Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
-        if (this.p1Status) this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping mr-2"></span>JOY-CON 1: <b class="text-white">${name || 'Player 1'}</b>`;
-        document.getElementById('p1-ready-badge')?.classList.remove('hidden');
-      } else {
-        this.p2Slot?.classList.add('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
-        this.p2Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
-        if (this.p2Status) this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping mr-2"></span>JOY-CON 2: <b class="text-white">${name || 'Player 2'}</b>`;
-        document.getElementById('p2-ready-badge')?.classList.remove('hidden');
-      }
-
-      this.checkStartReadiness();
     });
 
     // Mobile player left
     this.socket.on('player-left', ({ playerNumber }) => {
-      this.players[playerNumber] = false;
-      if (playerNumber === 1) {
-        this.p1Slot?.classList.remove('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
-        this.p1Slot?.classList.add('border-white/10', 'bg-slate-900/40');
-        if (this.p1Status) this.p1Status.innerHTML = `WAITING FOR PHONE 1...`;
-        document.getElementById('p1-ready-badge')?.classList.add('hidden');
-      } else {
-        this.p2Slot?.classList.remove('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
-        this.p2Slot?.classList.add('border-white/10', 'bg-slate-900/40');
-        if (this.p2Status) this.p2Status.innerHTML = `WAITING FOR PHONE 2 (OR AI BOT)...`;
-        document.getElementById('p2-ready-badge')?.classList.add('hidden');
-      }
-      this.checkStartReadiness();
+      this.setPlayerDisconnected(playerNumber);
     });
 
     // High frequency player input from phones

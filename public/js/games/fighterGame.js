@@ -17,6 +17,11 @@ class Sprite {
 
   draw(c) {
     if (!this.image.complete || this.image.naturalWidth === 0) return;
+    // If static background, stretch to fill the 1024x576 canvas cleanly
+    if (this.framesMax === 1) {
+      c.drawImage(this.image, 0, 0, 1024, 576);
+      return;
+    }
     const fw = this.image.width / this.framesMax;
     const fh = this.image.height;
     c.drawImage(
@@ -63,6 +68,7 @@ class Fighter extends Sprite {
     facing = 'right',
     defaultFacing = 'right',
     alignBottom = true,
+    sourceFeetY = null,
     width = 55,
     height = 150
   }) {
@@ -79,6 +85,8 @@ class Fighter extends Sprite {
     this.facing = facing;
     this.defaultFacing = defaultFacing;
     this.alignBottom = alignBottom;
+    this.defaultSourceFeetY = sourceFeetY;
+    this.sourceFeetY = sourceFeetY;
 
     this.attackBox = {
       position: { x: this.position.x, y: this.position.y },
@@ -94,6 +102,24 @@ class Fighter extends Sprite {
     }
   }
 
+  reset({ x, y }, facing) {
+    this.health = 100;
+    this.isDead = false;
+    this.isAttacking = false;
+    this.attackType = 1;
+    this.velocity = { x: 0, y: 0 };
+    this.position = { x, y };
+    this.facing = facing;
+    this.image = this.sprites.idle.image;
+    this.framesMax = this.sprites.idle.framesMax;
+    this.framesCurrent = 0;
+    this.framesElapsed = 0;
+    this.framesHold = 14;
+    this.sourceFeetY = (this.sprites.idle && this.sprites.idle.sourceFeetY !== undefined)
+      ? this.sprites.idle.sourceFeetY
+      : (this.defaultSourceFeetY || 128);
+  }
+
   draw(c) {
     if (!this.image.complete || this.image.naturalWidth === 0) return;
     const frameWidth = this.image.width / this.framesMax;
@@ -101,14 +127,14 @@ class Fighter extends Sprite {
     const destWidth = frameWidth * this.scale;
     const destHeight = frameHeight * this.scale;
 
-    // Anchor exactly at character horizontal center & feet baseline
+    // Anchor precisely at character horizontal center & ground baseline
     const centerX = this.position.x + this.width / 2;
+    const feetY = this.sourceFeetY || frameHeight;
     const drawY = this.alignBottom
-      ? this.position.y + this.height - destHeight
+      ? (this.position.y + this.height) - (feetY * this.scale)
       : this.position.y - this.offset.y;
 
     c.save();
-    // Translate directly to character center
     c.translate(centerX, drawY);
 
     // Flip around character center axis if facing opposite default
@@ -117,7 +143,7 @@ class Fighter extends Sprite {
       c.scale(-1, 1);
     }
 
-    // Draw centered horizontally so animation transitions NEVER jump or jitter!
+    // Centered horizontal drawing ensures zero jumping or displacement across animations
     c.drawImage(
       this.image,
       this.framesCurrent * frameWidth,
@@ -145,7 +171,7 @@ class Fighter extends Sprite {
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
 
-    // Boundaries
+    // Arena Boundaries
     this.position.x = Math.max(30, Math.min(canvasWidth - this.width - 30, this.position.x));
 
     // Gravity & Ground Collision
@@ -175,8 +201,11 @@ class Fighter extends Sprite {
   }
 
   switchSprite(sprite) {
-    // If dead, stay on death frame
-    if (this.image === this.sprites.death?.image) {
+    // If dead and not actively being revived to idle, stay dead
+    if (this.isDead && sprite !== 'idle') {
+      return;
+    }
+    if (this.image === this.sprites.death?.image && sprite !== 'idle') {
       if (this.framesCurrent === this.sprites.death.framesMax - 1) this.isDead = true;
       return;
     }
@@ -190,20 +219,24 @@ class Fighter extends Sprite {
     // Do not interrupt hit reaction
     if (this.image === this.sprites.takeHit?.image && this.framesCurrent < this.sprites.takeHit.framesMax - 1) return;
 
+    if (this.sprites[sprite]) {
+      this.sourceFeetY = this.sprites[sprite].sourceFeetY !== undefined
+        ? this.sprites[sprite].sourceFeetY
+        : (this.defaultSourceFeetY || this.image.height);
+    }
+
     switch (sprite) {
       case 'idle':
-        if (this.image !== this.sprites.idle.image) {
-          this.image = this.sprites.idle.image;
-          this.framesMax = this.sprites.idle.framesMax;
-          this.framesHold = 14; // Calm, smooth idle breathing
-          this.framesCurrent = 0;
-        }
+        this.image = this.sprites.idle.image;
+        this.framesMax = this.sprites.idle.framesMax;
+        this.framesHold = 14;
+        this.isDead = false;
         break;
       case 'run':
         if (this.image !== this.sprites.run.image) {
           this.image = this.sprites.run.image;
           this.framesMax = this.sprites.run.framesMax;
-          this.framesHold = 8; // Fluid running stride
+          this.framesHold = 8;
           this.framesCurrent = 0;
         }
         break;
@@ -227,7 +260,7 @@ class Fighter extends Sprite {
         if (this.image !== this.sprites.attack1.image) {
           this.image = this.sprites.attack1.image;
           this.framesMax = this.sprites.attack1.framesMax;
-          this.framesHold = 5; // Snappy sword slash
+          this.framesHold = 5;
           this.framesCurrent = 0;
         }
         break;
@@ -270,10 +303,10 @@ export class FighterGame {
     this.timerId = null;
     this.isOver = false;
 
-    // Active real-time input buffer with timeout watchdog
+    // Active real-time input buffer with watchdog
     this.activeInputs = {
-      1: { x: 0, y: 0, attack1: false, attack2: false, lastActive: Date.now() },
-      2: { x: 0, y: 0, attack1: false, attack2: false, lastActive: Date.now() }
+      1: { x: 0, y: 0, attack1: false, attack2: false, jump: false, lastActive: Date.now() },
+      2: { x: 0, y: 0, attack1: false, attack2: false, jump: false, lastActive: Date.now() }
     };
 
     this.gravity = 0.7;
@@ -286,11 +319,12 @@ export class FighterGame {
   render() {
     this.container.innerHTML = `
       <div class="relative w-full h-full flex flex-col items-center justify-center bg-slate-950 overflow-hidden select-none">
-        <!-- Stage Selector Chips -->
+        <!-- Stage Selector Chips (Theme Switcher) -->
         <div class="absolute top-2 left-0 right-0 z-30 flex items-center justify-center gap-2">
-          <button id="stage-btn-village" class="px-3 py-1 rounded-full text-[11px] font-mono bg-purple-950/90 border border-purple-400 text-purple-200 hover:brightness-125 transition cursor-pointer shadow-[0_0_10px_rgba(168,85,247,0.3)]">🏚️ CURSED VILLAGE</button>
-          <button id="stage-btn-cyber" class="px-3 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🌆 CYBER RUINS</button>
-          <button id="stage-btn-dojo" class="px-3 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🏯 ANCIENT DOJO</button>
+          <button id="stage-btn-cyber" class="stage-chip active px-3.5 py-1 rounded-full text-[11px] font-mono bg-cyan-950/90 border border-cyan-400 text-cyan-200 hover:brightness-125 transition cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.4)]">🌆 CYBER RUINS</button>
+          <button id="stage-btn-dojo" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🏯 SUNSET DOJO</button>
+          <button id="stage-btn-shrine" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">⛩️ NIGHT SHRINE</button>
+          <button id="stage-btn-village" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🏚️ CURSED VILLAGE</button>
         </div>
 
         <!-- Top HUD (HP Bars & 60s Round Timer) -->
@@ -311,11 +345,11 @@ export class FighterGame {
             <span id="fight-timer" class="font-orbitron font-black text-2xl text-yellow-300">60</span>
           </div>
 
-          <!-- Player 2 HP Bar (Ninja Kenji) -->
+          <!-- Player 2 HP Bar (Giant Boss Ninja Kenji) -->
           <div class="w-2/5 flex flex-col items-end">
             <div class="flex items-center justify-between w-full mb-1">
               <span id="p2-hp-text" class="font-mono text-xs text-pink-300 font-bold">100 HP</span>
-              <span class="font-orbitron font-black text-xs text-pink-500 tracking-wider">P2: NINJA KENJI 🥷</span>
+              <span class="font-orbitron font-black text-xs text-pink-500 tracking-wider">P2: GIANT NINJA KENJI 🥷</span>
             </div>
             <div class="w-full h-5 rounded-lg bg-slate-900 border-2 border-pink-500/50 p-0.5 shadow-[0_0_15px_rgba(255,0,85,0.3)] flex justify-end">
               <div id="p2-hp-bar" class="h-full rounded-md bg-gradient-to-l from-pink-500 to-rose-400 transition-all duration-150" style="width: 100%;"></div>
@@ -327,16 +361,21 @@ export class FighterGame {
         <canvas id="fighter-canvas" width="1024" height="576" class="w-full h-full max-w-5xl max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"></canvas>
 
         <!-- KO / Victory Banner -->
-        <div id="fight-result-banner" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md">
+        <div id="fight-result-banner" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
           <h1 id="fight-result-text" class="font-orbitron font-black text-6xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-500 to-red-500 animate-bounce mb-3">
             KNOCKOUT!
           </h1>
-          <p id="fight-result-winner" class="font-mono text-lg text-white font-bold tracking-wider mb-6">
+          <p id="fight-result-winner" class="font-mono text-xl text-white font-bold tracking-wider mb-6">
             🏆 PLAYER 1 WINS!
           </p>
-          <button id="fight-rematch-btn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-orbitron font-bold text-sm text-white shadow-[0_0_20px_rgba(0,240,255,0.5)] hover:brightness-110 active:scale-95 transition cursor-pointer">
-            PLAY AGAIN ⚔️
-          </button>
+          <div class="flex items-center gap-4">
+            <button id="fight-rematch-btn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 font-orbitron font-black text-base text-white shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:brightness-125 active:scale-95 transition cursor-pointer">
+              PLAY AGAIN ⚔️
+            </button>
+            <button id="fight-menu-btn" class="px-6 py-3.5 rounded-2xl bg-slate-900 border border-white/20 font-orbitron font-bold text-sm text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition cursor-pointer">
+              MAIN MENU 🏠
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -346,33 +385,34 @@ export class FighterGame {
     this.canvas = document.getElementById('fighter-canvas');
     this.c = this.canvas.getContext('2d');
 
-    // Background (Cursed Horror Village by default)
+    // Default Theme: Cyber Ruins Stage (Neon Cyberpunk)
     this.background = new Sprite({
       position: { x: 0, y: 0 },
-      imageSrc: '/assets/fighter/backgrounds/cursed_village.png'
+      imageSrc: '/assets/fighter/backgrounds/cyber_ruins_stage.png'
     });
 
     // Player 1 (Custom Cyborg Raider with Red Glowing Saber & Shuriken)
     this.player1 = new Fighter({
-      position: { x: 180, y: 300 },
+      position: { x: 180, y: 280 },
       velocity: { x: 0, y: 0 },
       imageSrc: '/assets/fighter/cyborg/Idle.png',
       framesMax: 3,
       scale: 1.15,
-      width: 55,
-      height: 150,
+      width: 70,
+      height: 200,
       facing: 'right',
       defaultFacing: 'right',
       alignBottom: true,
+      sourceFeetY: 175,
       sprites: {
-        idle: { imageSrc: '/assets/fighter/cyborg/Idle.png', framesMax: 3 },
-        run: { imageSrc: '/assets/fighter/cyborg/Run.png', framesMax: 4 },
-        jump: { imageSrc: '/assets/fighter/cyborg/Jump.png', framesMax: 4 },
-        fall: { imageSrc: '/assets/fighter/cyborg/Jump.png', framesMax: 4 },
-        attack1: { imageSrc: '/assets/fighter/cyborg/Attack1.png', framesMax: 6 },
-        attack2: { imageSrc: '/assets/fighter/cyborg/Attack2.png', framesMax: 3 },
-        takeHit: { imageSrc: '/assets/fighter/cyborg/TakeHit.png', framesMax: 3 },
-        death: { imageSrc: '/assets/fighter/cyborg/Death.png', framesMax: 4 }
+        idle: { imageSrc: '/assets/fighter/cyborg/Idle.png', framesMax: 3, sourceFeetY: 175 },
+        run: { imageSrc: '/assets/fighter/cyborg/Run.png', framesMax: 4, sourceFeetY: 161 },
+        jump: { imageSrc: '/assets/fighter/cyborg/Jump.png', framesMax: 4, sourceFeetY: 269 },
+        fall: { imageSrc: '/assets/fighter/cyborg/Jump.png', framesMax: 4, sourceFeetY: 269 },
+        attack1: { imageSrc: '/assets/fighter/cyborg/Attack1.png', framesMax: 6, sourceFeetY: 247 },
+        attack2: { imageSrc: '/assets/fighter/cyborg/Attack2.png', framesMax: 3, sourceFeetY: 142 },
+        takeHit: { imageSrc: '/assets/fighter/cyborg/TakeHit.png', framesMax: 3, sourceFeetY: 146 },
+        death: { imageSrc: '/assets/fighter/cyborg/Death.png', framesMax: 4, sourceFeetY: 149 }
       },
       attackBox: {
         offset: { x: 0, y: 25 },
@@ -381,33 +421,34 @@ export class FighterGame {
       }
     });
 
-    // Player 2 (Ninja Kenji - Scaled to exact matching proportions!)
+    // Player 2 (GIANT BOSS NINJA KENJI - Big, imposing rival planted firmly on the ground!)
     this.player2 = new Fighter({
-      position: { x: 740, y: 300 },
+      position: { x: 740, y: 280 },
       velocity: { x: 0, y: 0 },
       color: 'blue',
       imageSrc: '/assets/fighter/player2/Idle.png',
       framesMax: 4,
-      scale: 1.35,
-      width: 55,
-      height: 150,
+      scale: 3.7, // Big Giant Boss scale - perfectly matching Cyborg!
+      width: 90,
+      height: 200,
       facing: 'left',
       defaultFacing: 'left',
       alignBottom: true,
+      sourceFeetY: 128, // Ground anchoring: bypasses 72px transparent bottom padding
       sprites: {
-        idle: { imageSrc: '/assets/fighter/player2/Idle.png', framesMax: 4 },
-        run: { imageSrc: '/assets/fighter/player2/Run.png', framesMax: 8 },
-        jump: { imageSrc: '/assets/fighter/player2/Jump.png', framesMax: 2 },
-        fall: { imageSrc: '/assets/fighter/player2/Fall.png', framesMax: 2 },
-        attack1: { imageSrc: '/assets/fighter/player2/Attack1.png', framesMax: 4 },
-        attack2: { imageSrc: '/assets/fighter/player2/Attack2.png', framesMax: 4 },
-        takeHit: { imageSrc: '/assets/fighter/player2/TakeHit.png', framesMax: 3 },
-        death: { imageSrc: '/assets/fighter/player2/Death.png', framesMax: 7 }
+        idle: { imageSrc: '/assets/fighter/player2/Idle.png', framesMax: 4, sourceFeetY: 128 },
+        run: { imageSrc: '/assets/fighter/player2/Run.png', framesMax: 8, sourceFeetY: 128 },
+        jump: { imageSrc: '/assets/fighter/player2/Jump.png', framesMax: 2, sourceFeetY: 128 },
+        fall: { imageSrc: '/assets/fighter/player2/Fall.png', framesMax: 2, sourceFeetY: 128 },
+        attack1: { imageSrc: '/assets/fighter/player2/Attack1.png', framesMax: 4, sourceFeetY: 128 },
+        attack2: { imageSrc: '/assets/fighter/player2/Attack2.png', framesMax: 4, sourceFeetY: 128 },
+        takeHit: { imageSrc: '/assets/fighter/player2/TakeHit.png', framesMax: 3, sourceFeetY: 128 },
+        death: { imageSrc: '/assets/fighter/player2/Death.png', framesMax: 7, sourceFeetY: 128 }
       },
       attackBox: {
-        offset: { x: 0, y: 25 },
-        width: 155,
-        height: 75
+        offset: { x: 0, y: 35 },
+        width: 220,
+        height: 100
       }
     });
 
@@ -417,21 +458,39 @@ export class FighterGame {
   }
 
   bindStageSelectors() {
-    const setStage = (src) => {
+    const setStage = (btnId, src) => {
       this.background.image = new Image();
       this.background.image.src = src;
+      document.querySelectorAll('.stage-chip').forEach(btn => {
+        btn.classList.remove('active', 'border-cyan-400', 'bg-cyan-950/90', 'text-cyan-200', 'shadow-[0_0_12px_rgba(0,240,255,0.4)]');
+        btn.classList.add('bg-slate-900', 'border-white/20', 'text-slate-300');
+      });
+      const activeBtn = document.getElementById(btnId);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'border-cyan-400', 'bg-cyan-950/90', 'text-cyan-200', 'shadow-[0_0_12px_rgba(0,240,255,0.4)]');
+        activeBtn.classList.remove('bg-slate-900', 'border-white/20', 'text-slate-300');
+      }
     };
-    document.getElementById('stage-btn-village')?.addEventListener('click', () => {
-      setStage('/assets/fighter/backgrounds/cursed_village.png');
-    });
+
     document.getElementById('stage-btn-cyber')?.addEventListener('click', () => {
-      setStage('/assets/fighter/backgrounds/cyber_ruins_stage.png');
+      setStage('stage-btn-cyber', '/assets/fighter/backgrounds/cyber_ruins_stage.png');
     });
     document.getElementById('stage-btn-dojo')?.addEventListener('click', () => {
-      setStage('/assets/fighter/backgrounds/background1.png');
+      setStage('stage-btn-dojo', '/assets/fighter/backgrounds/background1.png');
     });
+    document.getElementById('stage-btn-shrine')?.addEventListener('click', () => {
+      setStage('stage-btn-shrine', '/assets/fighter/backgrounds/background8.png');
+    });
+    document.getElementById('stage-btn-village')?.addEventListener('click', () => {
+      setStage('stage-btn-village', '/assets/fighter/backgrounds/cursed_village.png');
+    });
+
     document.getElementById('fight-rematch-btn')?.addEventListener('click', () => {
       this.restartRound();
+    });
+
+    document.getElementById('fight-menu-btn')?.addEventListener('click', () => {
+      window.airConsole?.returnToLobby?.();
     });
   }
 
@@ -477,7 +536,7 @@ export class FighterGame {
       const p = pNum === 1 ? this.player1 : this.player2;
       if (!p || p.isDead || this.isOver) continue;
 
-      // Inactivity timeout: If no input received within 350ms, immediately zero out movement!
+      // Inactivity timeout: If no input received within 350ms, immediately zero out movement
       if (now - inp.lastActive > 350) {
         inp.x = 0;
       }
@@ -588,7 +647,7 @@ export class FighterGame {
       this.player2.framesCurrent === 2
     ) {
       this.player2.isAttacking = false;
-      this.player1.takeHit(15);
+      this.player1.takeHit(18);
       this.updateHud();
       window.sounds?.playExplosion?.();
       this.syncToMobile?.(1, 'haptic', { pattern: [40, 30, 80] });
@@ -600,7 +659,12 @@ export class FighterGame {
 
     // Check for Knockout
     if ((this.player1.health <= 0 || this.player2.health <= 0) && !this.isOver) {
-      this.determineWinner();
+      this.isOver = true;
+      clearInterval(this.timerId);
+      // Give a 900ms dramatic delay so the defeat fall animation plays out before the banner shows!
+      setTimeout(() => {
+        this.determineWinner();
+      }, 900);
     }
   }
 
@@ -621,9 +685,6 @@ export class FighterGame {
   }
 
   determineWinner() {
-    this.isOver = true;
-    clearInterval(this.timerId);
-
     const banner = document.getElementById('fight-result-banner');
     const winnerText = document.getElementById('fight-result-winner');
 
@@ -634,7 +695,7 @@ export class FighterGame {
       winnerName = '🏆 PLAYER 1 (CYBORG RAIDER) WINS!';
     } else if (this.player2.health > this.player1.health) {
       winnerNum = 2;
-      winnerName = '🏆 PLAYER 2 (NINJA KENJI) WINS!';
+      winnerName = '🏆 PLAYER 2 (GIANT NINJA) WINS!';
     }
 
     if (banner) banner.classList.remove('hidden');
@@ -647,18 +708,13 @@ export class FighterGame {
 
   restartRound() {
     this.isOver = false;
-    this.player1.health = 100;
-    this.player2.health = 100;
-    this.player1.isDead = false;
-    this.player2.isDead = false;
-    this.player1.position = { x: 180, y: 300 };
-    this.player2.position = { x: 740, y: 300 };
-    this.player1.velocity = { x: 0, y: 0 };
-    this.player2.velocity = { x: 0, y: 0 };
-    this.player1.switchSprite('idle');
-    this.player2.switchSprite('idle');
-    this.player1.facing = 'right';
-    this.player2.facing = 'left';
+    // Cleanly revive both fighters back to full health and idle state
+    this.player1.reset({ x: 180, y: 280 }, 'right');
+    this.player2.reset({ x: 740, y: 280 }, 'left');
+    this.activeInputs = {
+      1: { x: 0, y: 0, attack1: false, attack2: false, jump: false, lastActive: Date.now() },
+      2: { x: 0, y: 0, attack1: false, attack2: false, jump: false, lastActive: Date.now() }
+    };
 
     const banner = document.getElementById('fight-result-banner');
     if (banner) banner.classList.add('hidden');

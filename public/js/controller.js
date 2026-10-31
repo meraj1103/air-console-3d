@@ -83,42 +83,114 @@ class MobileGamepad {
     this.joystickAmbientGuide = document.getElementById('joystick-ambient-guide');
 
     this.fullscreenBtn = document.getElementById('fullscreen-btn');
+    this.headerFsBtn = document.getElementById('header-fullscreen-btn');
+    this.joinFsBtn = document.getElementById('join-fullscreen-btn');
+    this.floatingFsPill = document.getElementById('fs-floating-pill');
+    this.headerFsLabel = document.getElementById('header-fs-label');
+    this.floatingFsLabel = document.getElementById('floating-fs-label');
+    this.reconnectToast = document.getElementById('reconnect-toast');
+    this.reconnectToastMsg = document.getElementById('reconnect-toast-msg');
     this.rematchModal = document.getElementById('mobile-rematch-modal');
+
+    // Sync fullscreen UI on standard events
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+      document.addEventListener(evt, () => this.updateFullscreenUI());
+    });
   }
 
-  toggleFullscreen() {
+  enterFullscreen() {
+    const el = document.documentElement;
+    const rfs = el.requestFullscreen ||
+      el.webkitRequestFullscreen ||
+      el.webkitRequestFullScreen ||
+      el.mozRequestFullScreen ||
+      el.msRequestFullscreen;
+
+    if (rfs) {
+      try {
+        const p = rfs.call(el);
+        if (p && p.then) {
+          p.then(() => {
+            if (screen.orientation && screen.orientation.lock) {
+              screen.orientation.lock('landscape').catch(() => {});
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) {}
+
+    window.scrollTo(0, 1);
+    setTimeout(() => {
+      window.scrollTo(0, 1);
+      this.updateFullscreenUI();
+    }, 250);
+  }
+
+  exitFullscreen() {
     const doc = document;
-    const docEl = doc.documentElement;
-
-    const req = docEl.requestFullscreen ||
-      docEl.webkitRequestFullscreen ||
-      docEl.webkitRequestFullScreen ||
-      docEl.mozRequestFullScreen ||
-      docEl.msRequestFullscreen;
-
-    const exit = doc.exitFullscreen ||
+    const efs = doc.exitFullscreen ||
       doc.webkitExitFullscreen ||
       doc.mozCancelFullScreen ||
       doc.msExitFullscreen;
+    if (efs) {
+      try {
+        const p = efs.call(doc);
+        if (p && p.catch) p.catch(() => {});
+      } catch (e) {}
+    }
+    setTimeout(() => this.updateFullscreenUI(), 250);
+  }
 
-    const isFs = doc.fullscreenElement ||
-      doc.webkitFullscreenElement ||
-      doc.webkitCurrentFullScreenElement ||
-      doc.mozFullScreenElement ||
-      doc.msFullscreenElement;
+  toggleFullscreen() {
+    const isFs = !!(document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement);
 
     if (!isFs) {
-      if (req) {
-        req.call(docEl).then(() => {
-          if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(() => {});
-          }
-        }).catch(() => {});
-      }
+      this.enterFullscreen();
     } else {
-      if (exit) {
-        exit.call(doc).catch(() => {});
+      this.exitFullscreen();
+    }
+  }
+
+  updateFullscreenUI() {
+    const isFs = !!(document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement);
+
+    if (this.floatingFsPill) {
+      if (isFs) {
+        this.floatingFsPill.classList.add('hidden');
+      } else {
+        this.floatingFsPill.classList.remove('hidden');
       }
+    }
+    if (this.headerFsLabel) {
+      this.headerFsLabel.textContent = isFs ? 'EXIT FS' : 'FULLSCREEN';
+    }
+    if (this.fullscreenBtn) {
+      this.fullscreenBtn.innerHTML = isFs ? '<span>⛶</span><span>EXIT FS</span>' : '<span>⛶</span><span>FULLSCREEN</span>';
+    }
+  }
+
+  showToast(msg) {
+    if (this.reconnectToast && this.reconnectToastMsg) {
+      this.reconnectToastMsg.textContent = msg;
+      this.reconnectToast.classList.remove('hidden');
+    }
+  }
+
+  hideToast() {
+    if (this.reconnectToast) {
+      this.reconnectToast.classList.add('hidden');
     }
   }
 
@@ -133,29 +205,47 @@ class MobileGamepad {
   checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
+    const savedRoom = localStorage.getItem('airconsole_room_code');
+    const codeToUse = (roomParam || savedRoom || 'CYBER').toUpperCase();
+    if (this.roomInput) {
+      this.roomInput.value = codeToUse;
+    }
     if (roomParam) {
-      this.roomInput.value = roomParam.toUpperCase();
-      this.joinRoom(roomParam.toUpperCase());
+      this.joinRoom(codeToUse);
     }
   }
 
   bindRoomJoinUi() {
-    this.joinBtn?.addEventListener('click', () => {
+    const doJoin = () => {
+      this.enterFullscreen();
       window.sounds?.playClick();
-      const code = (this.roomInput.value || '').trim();
-      if (!code) {
-        this.showError('Please enter a 4-digit room code');
-        return;
-      }
+      const code = (this.roomInput.value || 'CYBER').trim();
       this.joinRoom(code);
+    };
+
+    this.joinBtn?.addEventListener('click', doJoin);
+    this.joinBtn?.addEventListener('touchstart', () => {
+      this.enterFullscreen();
+    }, { passive: true });
+
+    this.joinFsBtn?.addEventListener('click', () => {
+      this.enterFullscreen();
     });
 
-    this.roomInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') this.joinBtn?.click();
+    this.headerFsBtn?.addEventListener('click', () => {
+      this.toggleFullscreen();
+    });
+
+    this.floatingFsPill?.addEventListener('click', () => {
+      this.toggleFullscreen();
     });
 
     this.fullscreenBtn?.addEventListener('click', () => {
       this.toggleFullscreen();
+    });
+
+    this.roomInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doJoin();
     });
 
     this.gyroToggleBtn?.addEventListener('click', () => {
@@ -179,10 +269,14 @@ class MobileGamepad {
     }
   }
 
-  joinRoom(code) {
+  joinRoom(code, preferredSlot = null) {
     this.showError('');
+    const roomCodeToJoin = (code || 'CYBER').toUpperCase().trim();
+    const targetSlot = preferredSlot || this.playerNumber || parseInt(localStorage.getItem('airconsole_player_slot'), 10) || null;
+
     this.socket.emit('join-room', {
-      roomCode: code,
+      roomCode: roomCodeToJoin,
+      preferredSlot: targetSlot,
       deviceName: navigator.userAgent.includes('iPhone') ? 'iPhone' : 
                   navigator.userAgent.includes('Android') ? 'Android' : 'Joy-Con Controller'
     }, (res) => {
@@ -190,6 +284,15 @@ class MobileGamepad {
         this.playerNumber = res.playerNumber;
         this.roomCode = res.roomCode;
         this.isConnected = true;
+        if (this.reconnectInterval) {
+          clearInterval(this.reconnectInterval);
+          this.reconnectInterval = null;
+        }
+        try {
+          localStorage.setItem('airconsole_room_code', this.roomCode);
+          localStorage.setItem('airconsole_player_slot', this.playerNumber);
+        } catch (e) {}
+        this.hideToast();
         this.setupGamepadView();
       } else {
         this.showError(res ? res.error : 'Connection failed. Check room code on laptop.');
@@ -216,6 +319,27 @@ class MobileGamepad {
   }
 
   bindSocketEvents() {
+    this.socket.on('connect', () => {
+      console.log('Socket connected to server');
+      this.hideToast();
+      const savedRoom = this.roomCode || localStorage.getItem('airconsole_room_code') || 'CYBER';
+      const savedSlot = this.playerNumber || parseInt(localStorage.getItem('airconsole_player_slot'), 10) || null;
+      if (this.isConnected && savedRoom) {
+        console.log(`Auto re-joining persistent room ${savedRoom} slot ${savedSlot}...`);
+        this.showToast(`Re-joining Room ${savedRoom}...`);
+        this.joinRoom(savedRoom, savedSlot);
+      }
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.warn('Socket disconnected:', reason);
+      this.showToast('Reconnecting to Host screen...');
+      if (this.playerBadge) {
+        this.playerBadge.textContent = 'RECONNECTING...';
+        this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-yellow-500/20 text-yellow-300 border border-yellow-400/50 animate-pulse';
+      }
+    });
+
     this.socket.on('host-sync', ({ type, payload }) => {
       if (type === 'haptic' && payload && payload.pattern) {
         this.triggerHaptic(payload.pattern);
@@ -233,8 +357,18 @@ class MobileGamepad {
     });
 
     this.socket.on('host-disconnected', () => {
-      alert('The host laptop disconnected.');
-      window.location.reload();
+      console.warn('Host laptop temporarily disconnected');
+      this.showToast(`Host laptop offline. Holding room ${this.roomCode || 'CYBER'}...`);
+      if (this.playerBadge) {
+        this.playerBadge.textContent = 'WAITING FOR HOST...';
+        this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-yellow-500/20 text-yellow-300 border border-yellow-400/50 animate-pulse';
+      }
+      if (this.reconnectInterval) clearInterval(this.reconnectInterval);
+      this.reconnectInterval = setInterval(() => {
+        if (this.roomCode) {
+          this.joinRoom(this.roomCode, this.playerNumber);
+        }
+      }, 2500);
     });
   }
 

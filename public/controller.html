@@ -23,6 +23,20 @@
   <!-- Scanline overlay -->
   <div class="fixed inset-0 phone-scanline z-40"></div>
 
+  <!-- Floating Fullscreen Overlay Pill (Always accessible from any screen) -->
+  <button id="fs-floating-pill"
+    class="fixed top-2.5 right-2.5 z-50 px-3 py-1.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-cyan-300 font-orbitron font-bold text-[10px] tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.4)] backdrop-blur-md active:scale-95 transition cursor-pointer flex items-center gap-1.5">
+    <span>⛶</span>
+    <span id="floating-fs-label">FULLSCREEN</span>
+  </button>
+
+  <!-- Non-intrusive Reconnecting Toast -->
+  <div id="reconnect-toast"
+    class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-slate-900/95 border-2 border-yellow-400/80 text-yellow-300 font-mono text-xs font-bold tracking-wider shadow-[0_0_20px_rgba(255,230,0,0.4)] flex items-center gap-2 pointer-events-none animate-pulse">
+    <span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+    <span id="reconnect-toast-msg">Reconnecting to Host...</span>
+  </div>
+
   <!-- ============================================== -->
   <!-- 1. JOIN SCREEN (PIN Entry / Auto-Connect)      -->
   <!-- ============================================== -->
@@ -43,7 +57,7 @@
         <label class="block text-[11px] font-mono tracking-widest text-slate-400 mb-2 uppercase text-left">
           Enter 4-Digit Room Code:
         </label>
-        <input id="room-input" type="text" maxlength="6" placeholder="e.g. 4JDA" autocomplete="off"
+        <input id="room-input" type="text" maxlength="6" placeholder="CYBER" autocomplete="off"
           autocapitalize="characters"
           class="w-full bg-slate-900 border-2 border-cyan-400/50 focus:border-cyan-400 focus:outline-none rounded-2xl py-3.5 text-center font-orbitron font-black text-3xl tracking-widest text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.15)] uppercase">
       </div>
@@ -52,8 +66,14 @@
         class="hidden text-xs text-rose-400 font-mono mb-4 bg-rose-950/40 border border-rose-500/30 rounded-lg p-2.5 w-full">
       </p>
 
+      <button id="join-fullscreen-btn"
+        class="mb-3 w-full py-2.5 rounded-xl bg-slate-900/90 border border-cyan-400/60 text-cyan-300 font-orbitron font-bold text-xs tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.25)] active:scale-95 transition cursor-pointer">
+        <span>⛶</span>
+        <span>ENTER FULLSCREEN MODE</span>
+      </button>
+
       <button id="join-btn"
-        class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-pink-500 font-orbitron font-black text-sm tracking-widest text-white shadow-[0_0_25px_rgba(0,240,255,0.4)] active:scale-95 transition">
+        class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-pink-500 font-orbitron font-black text-sm tracking-widest text-white shadow-[0_0_25px_rgba(0,240,255,0.4)] active:scale-95 transition cursor-pointer">
         CONNECT AS GAMEPAD ⚡
       </button>
 
@@ -101,9 +121,16 @@
 
         <!-- Gyro Steering Button in Header -->
         <button id="gyro-toggle-btn"
-          class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-slate-900 border border-white/20 text-slate-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-sm cursor-pointer">
+          class="px-2 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-slate-900 border border-white/20 text-slate-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-sm cursor-pointer">
           <span class="text-xs">🧭</span>
-          <span id="gyro-status-label">WHEEL: OFF</span>
+          <span id="gyro-status-label">WHEEL</span>
+        </button>
+
+        <!-- Header Fullscreen Button -->
+        <button id="header-fullscreen-btn"
+          class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-cyan-950/80 border border-cyan-400/80 text-cyan-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-[0_0_10px_rgba(0,240,255,0.25)] cursor-pointer">
+          <span class="text-xs">⛶</span>
+          <span id="header-fs-label">FULLSCREEN</span>
         </button>
 
         <span id="ping-badge" class="text-[9px] font-mono text-slate-400 flex items-center">

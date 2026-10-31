@@ -142,17 +142,42 @@ function generateRoomCode() {
 
 io.on('connection', (socket) => {
   // Host creates room
+  // Host creates room (Persistent Room Code CYBER + Graceful Re-attach)
   socket.on('create-room', async (requestedCode, callback) => {
-    let roomCode = (requestedCode && !rooms.has(requestedCode.toUpperCase()))
-      ? requestedCode.toUpperCase()
-      : generateRoomCode();
-
-    while (rooms.has(roomCode)) {
-      roomCode = generateRoomCode();
-    }
+    let roomCode = (requestedCode || 'CYBER').toUpperCase().trim();
+    let room = rooms.get(roomCode);
 
     const baseUrl = getBaseUrl(socket, null);
     const controllerUrl = `${baseUrl}/controller.html?room=${roomCode}`;
+
+    if (room) {
+      // Host is reconnecting/refreshing: Cancel cleanup timer & re-attach without kicking players!
+      if (room.hostDisconnectTimer) {
+        clearTimeout(room.hostDisconnectTimer);
+        room.hostDisconnectTimer = null;
+      }
+      room.hostId = socket.id;
+      socket.join(roomCode);
+      socket.roomCode = roomCode;
+      socket.isHost = true;
+
+      console.log(`[Host Reattached] Seamlessly re-attached host to persistent Room: ${roomCode}`);
+
+      if (callback) {
+        callback({
+          success: true,
+          roomCode,
+          localIp,
+          port: PORT,
+          controllerUrl,
+          qrCode: room.qrCode,
+          players: room.players
+        });
+      }
+      return;
+    }
+
+    // Brand new room creation
     let qrCode = '';
     try {
       qrCode = await QRCode.toDataURL(controllerUrl, {
@@ -167,14 +192,16 @@ io.on('connection', (socket) => {
       console.error(e);
     }
 
-    const room = {
+    room = {
       code: roomCode,
       hostId: socket.id,
+      qrCode: qrCode,
+      hostDisconnectTimer: null,
       players: {
         1: { socketId: null, name: 'Player 1', ready: false, device: 'Mobile' },
         2: { socketId: null, name: 'Player 2', ready: false, device: 'Mobile' }
       },
-      selectedGame: 'tank'
+      selectedGame: 'fighter'
     };
 
     rooms.set(roomCode, room);
@@ -189,28 +216,31 @@ io.on('connection', (socket) => {
         localIp,
         port: PORT,
         controllerUrl,
-        qrCode
+        qrCode,
+        players: room.players
       });
     }
 
-    console.log(`[Host Created] Room: ${roomCode} at ${controllerUrl}`);
+    console.log(`[Host Created] Persistent Room: ${roomCode} at ${controllerUrl}`);
   });
 
-  // Mobile controller connects to room
-  socket.on('join-room', ({ roomCode, deviceName }, callback) => {
-    const code = (roomCode || '').toUpperCase().trim();
+  // Mobile controller connects to room (Supports Reconnection to preferred slot)
+  socket.on('join-room', ({ roomCode, deviceName, preferredSlot }, callback) => {
+    const code = (roomCode || 'CYBER').toUpperCase().trim();
     const room = rooms.get(code);
 
     if (!room) {
-      if (callback) callback({ success: false, error: 'Room not found. Check the code on the screen!' });
+      if (callback) callback({ success: false, error: `Room ${code} not found. Please open the game screen first!` });
       return;
     }
 
-    // Check which player slot is open (1 or 2)
+    // Check which player slot is open (prefer previous slot on reconnect)
     let assignedPlayerNumber = null;
-    if (!room.players[1].socketId) {
+    if (preferredSlot && (!room.players[preferredSlot].socketId || room.players[preferredSlot].socketId === socket.id)) {
+      assignedPlayerNumber = preferredSlot;
+    } else if (!room.players[1].socketId || room.players[1].socketId === socket.id) {
       assignedPlayerNumber = 1;
-    } else if (!room.players[2].socketId) {
+    } else if (!room.players[2].socketId || room.players[2].socketId === socket.id) {
       assignedPlayerNumber = 2;
     }
 
@@ -220,7 +250,7 @@ io.on('connection', (socket) => {
     }
 
     room.players[assignedPlayerNumber].socketId = socket.id;
-    room.players[assignedPlayerNumber].name = deviceName || `Player ${assignedPlayerNumber}`;
+    room.players[assignedPlayerNumber].name = deviceName || (Player );
     room.players[assignedPlayerNumber].ready = true;
 
     socket.join(code);
@@ -242,10 +272,9 @@ io.on('connection', (socket) => {
       name: room.players[assignedPlayerNumber].name
     });
 
-    console.log(`[Player Joined] Player ${assignedPlayerNumber} joined room ${code}`);
+    console.log(`[Player Joined] Player ${assignedPlayerNumber} (${room.players[assignedPlayerNumber].name}) connected to persistent room ${code}`);
   });
 
-  // Relay high-speed controller input from mobile to host screen
   socket.on('controller-input', (inputData) => {
     if (!socket.roomCode || !socket.playerNumber) return;
     const room = rooms.get(socket.roomCode);
@@ -343,12 +372,22 @@ io.on('connection', (socket) => {
   });
 
   // Handle disconnect
+  // Handle disconnect with 30-second Grace Period (Immune to network blips & page refreshes)
   socket.on('disconnect', () => {
     if (socket.isHost && socket.roomCode) {
-      console.log(`[Host Closed] Room ${socket.roomCode}`);
-      // Notify connected players that host closed
-      socket.to(socket.roomCode).emit('host-disconnected');
-      rooms.delete(socket.roomCode);
+      const room = rooms.get(socket.roomCode);
+      if (room) {
+        console.log(`[Host Temp Disconnect] Holding Room ${socket.roomCode} for 30s grace period...`);
+        // Notify players host is briefly reconnecting (no disruptive alert)
+        socket.to(socket.roomCode).emit('host-reconnecting');
+
+        if (room.hostDisconnectTimer) clearTimeout(room.hostDisconnectTimer);
+        room.hostDisconnectTimer = setTimeout(() => {
+          console.log(`[Room Expired] Persistent Room ${socket.roomCode} deleted after 30s host inactivity.`);
+          io.to(socket.roomCode).emit('host-disconnected');
+          rooms.delete(socket.roomCode);
+        }, 30000);
+      }
     } else if (socket.roomCode && socket.playerNumber) {
       const room = rooms.get(socket.roomCode);
       if (room) {
