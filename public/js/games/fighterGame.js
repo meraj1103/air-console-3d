@@ -515,12 +515,12 @@ export class FighterGame {
 
     current.lastActive = Date.now();
 
-    // Movement X (with 0.25 deadzone threshold to eliminate drift)
+    // Movement X & Y (with deadzone threshold to eliminate analog drift)
     if (typeof input.x === 'number') {
       current.x = Math.abs(input.x) > 0.25 ? input.x : 0;
     }
     if (typeof input.y === 'number') {
-      current.y = input.y;
+      current.y = Math.abs(input.y) > 0.35 ? input.y : 0;
     }
 
     if (input.btnA || input.btnRT || input.fire) current.attack1 = true;
@@ -555,11 +555,12 @@ export class FighterGame {
         if (p.velocity.y === 0) p.switchSprite('idle');
       }
 
-      // Jump
+      // Jump (discrete impulse)
       if ((inp.y < -0.45 || inp.jump) && p.velocity.y === 0) {
         p.velocity.y = -18;
         p.switchSprite('jump');
         inp.jump = false;
+        inp.y = 0;
         window.sounds?.playJump?.();
       }
 
@@ -720,6 +721,8 @@ export class FighterGame {
     if (banner) banner.classList.add('hidden');
 
     this.updateHud();
+    this.syncToMobile?.(1, 'rematch-start', {});
+    this.syncToMobile?.(2, 'rematch-start', {});
     this.startTimer();
   }
 

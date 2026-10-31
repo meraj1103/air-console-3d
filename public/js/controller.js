@@ -223,13 +223,15 @@ class MobileGamepad {
   checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
+    const slotParam = parseInt(params.get('slot'), 10);
+    const preferredSlot = (slotParam === 1 || slotParam === 2) ? slotParam : null;
     const savedRoom = localStorage.getItem('airconsole_room_code');
     const codeToUse = (roomParam || savedRoom || 'CYBER').toUpperCase();
     if (this.roomInput) {
       this.roomInput.value = codeToUse;
     }
     if (roomParam) {
-      this.joinRoom(codeToUse);
+      this.joinRoom(codeToUse, preferredSlot);
     }
   }
 
@@ -290,7 +292,12 @@ class MobileGamepad {
   joinRoom(code, preferredSlot = null) {
     this.showError('');
     const roomCodeToJoin = (code || 'CYBER').toUpperCase().trim();
-    const targetSlot = preferredSlot || this.playerNumber || parseInt(localStorage.getItem('airconsole_player_slot'), 10) || null;
+    const urlSlot = parseInt(new URLSearchParams(window.location.search).get('slot'), 10);
+    const sessionSlot = parseInt(sessionStorage.getItem('airconsole_player_slot'), 10);
+    const targetSlot = (urlSlot === 1 || urlSlot === 2) ? urlSlot :
+                       (preferredSlot === 1 || preferredSlot === 2) ? preferredSlot :
+                       (this.playerNumber === 1 || this.playerNumber === 2) ? this.playerNumber :
+                       (sessionSlot === 1 || sessionSlot === 2) ? sessionSlot : null;
 
     this.socket.emit('join-room', {
       roomCode: roomCodeToJoin,
@@ -308,7 +315,7 @@ class MobileGamepad {
         }
         try {
           localStorage.setItem('airconsole_room_code', this.roomCode);
-          localStorage.setItem('airconsole_player_slot', this.playerNumber);
+          sessionStorage.setItem('airconsole_player_slot', this.playerNumber);
         } catch (e) {}
         this.hideToast();
         this.setupGamepadView();
@@ -361,13 +368,15 @@ class MobileGamepad {
     this.socket.on('host-sync', ({ type, payload }) => {
       if (type === 'haptic' && payload && payload.pattern) {
         this.triggerHaptic(payload.pattern);
-      } else if (type === 'status-sync' && payload) {
+      } else if ((type === 'status-sync' || type === 'hp') && payload) {
         this.updateMobileHud(payload);
       } else if (type === 'game-over') {
-        this.showRematchDialog(payload.winnerId);
-      } else if (type === 'game-start') {
+        this.showRematchDialog(payload?.winnerId);
+      } else if (type === 'game-start' || type === 'rematch-start') {
         this.rematchModal.classList.add('hidden');
-        this.adaptButtonLabels(payload.game);
+        if (payload && payload.game) {
+          this.adaptButtonLabels(payload.game);
+        }
         this.triggerHaptic([30, 30, 60]);
       } else if (type === 'return-lobby') {
         this.rematchModal.classList.add('hidden');

@@ -16,3 +16,4 @@ echo ========================================================
 echo Now double-click "start_hotwheels_bridge.bat" to start playing!
 echo.
 pause
+

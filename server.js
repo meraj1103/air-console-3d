@@ -257,21 +257,44 @@ io.on('connection', (socket) => {
       rooms.set(code, room);
     }
 
-    // Check which player slot is open (cleanly evict dead ghost sockets on reconnect)
+    // Check which player slot is open (never disconnect an active living player in another slot)
     let assignedPlayerNumber = null;
-    if (preferredSlot && (preferredSlot === 1 || preferredSlot === 2)) {
-      const existingSocketId = room.players[preferredSlot].socketId;
-      if (existingSocketId && existingSocketId !== socket.id) {
-        const oldSock = io.sockets.sockets.get(existingSocketId);
-        if (oldSock) {
-          try { oldSock.leave(code); oldSock.disconnect(true); } catch (e) {}
+
+    const isSlotOccupied = (slotNum) => {
+      const p = room.players[slotNum];
+      if (!p || !p.socketId) return false;
+      if (p.socketId === socket.id) return false; // same socket reconnecting
+      const sock = io.sockets.sockets.get(p.socketId);
+      return Boolean(sock && sock.connected);
+    };
+
+    if (preferredSlot === 1 || preferredSlot === 2) {
+      if (!isSlotOccupied(preferredSlot)) {
+        // Preferred slot is available or held by a dead/ghost socket
+        const oldId = room.players[preferredSlot]?.socketId;
+        if (oldId && oldId !== socket.id) {
+          const oldSock = io.sockets.sockets.get(oldId);
+          if (oldSock) {
+            try { oldSock.leave(code); oldSock.disconnect(true); } catch (e) {}
+          }
+        }
+        assignedPlayerNumber = preferredSlot;
+      } else {
+        // Preferred slot is actively occupied by another device, take the opposite slot!
+        const alternateSlot = preferredSlot === 1 ? 2 : 1;
+        if (!isSlotOccupied(alternateSlot)) {
+          assignedPlayerNumber = alternateSlot;
         }
       }
-      assignedPlayerNumber = preferredSlot;
-    } else if (!room.players[1].socketId || room.players[1].socketId === socket.id) {
-      assignedPlayerNumber = 1;
-    } else if (!room.players[2].socketId || room.players[2].socketId === socket.id) {
-      assignedPlayerNumber = 2;
+    }
+
+    // Default allocation if preferredSlot wasn't specified or was taken
+    if (!assignedPlayerNumber) {
+      if (!isSlotOccupied(1)) {
+        assignedPlayerNumber = 1;
+      } else if (!isSlotOccupied(2)) {
+        assignedPlayerNumber = 2;
+      }
     }
 
     if (!assignedPlayerNumber) {
@@ -324,8 +347,10 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Direct hardware injection into Windows game (Hot Wheels)
-    if (pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
+    // Direct hardware injection into Windows game (Hot Wheels) ONLY when a Windows native game mode is active!
+    // Never inject simulated OS keystrokes during browser party games (e.g. fighter, kart, tank)
+    const isWindowsGame = room && (room.selectedGame === 'hotwheels' || room.selectedGame === 'gamepad');
+    if (isWindowsGame && pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
       try {
         pythonBridge.stdin.write(JSON.stringify({
           playerNumber: socket.playerNumber,
@@ -385,6 +410,11 @@ io.on('connection', (socket) => {
     if (!socket.roomCode) return;
     const room = rooms.get(socket.roomCode);
     if (!room) return;
+    if (type === 'game-start' && payload && payload.game) {
+      room.selectedGame = payload.game;
+    } else if (type === 'return-lobby') {
+      room.selectedGame = 'lobby';
+    }
     for (const pNum of [1, 2]) {
       const p = room.players[pNum];
       if (p && p.socketId) {

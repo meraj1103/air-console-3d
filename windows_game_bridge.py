@@ -153,36 +153,40 @@ VK_MAP = {
 }
 
 def send_hardware_and_message_key(scan_code, is_pressed, is_extended=False):
-    """Sends keystrokes via both SendInput and direct PostMessage to Hot Wheels."""
-    flags = KEYEVENTF_SCANCODE
-    if not is_pressed:
-        flags |= KEYEVENTF_KEYUP
-    if is_extended:
-        flags |= KEYEVENTF_EXTENDEDKEY
-
-    inp = INPUT()
-    inp.type = INPUT_KEYBOARD
-    inp.ki.wVk = 0
-    inp.ki.wScan = scan_code
-    inp.ki.dwFlags = flags
-    inp.ki.time = 0
-    inp.ki.dwExtraInfo = 0
-
-    # 1. Windows OS SendInput
-    user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
-
-    # 2. Direct Window Message Queue Injection (PostMessage)
+    """Sends keystrokes via direct PostMessage to Hot Wheels, and SendInput ONLY when Hot Wheels is the foreground window."""
     hw = find_hotwheels_window()
-    if hw:
-        vk = VK_MAP.get(scan_code, 0)
-        if vk:
-            msg = WM_KEYDOWN if is_pressed else WM_KEYUP
-            lparam = (1) | (scan_code << 16)
-            if not is_pressed:
-                lparam |= (1 << 31) | (1 << 30)
-            if is_extended:
-                lparam |= (1 << 24)
-            user32.PostMessageW(hw, msg, vk, lparam)
+    if not hw:
+        # Hot Wheels is not running - never bleed simulated keystrokes into other apps or browser!
+        return
+
+    # 1. Direct Window Message Queue Injection (PostMessage)
+    vk = VK_MAP.get(scan_code, 0)
+    if vk:
+        msg = WM_KEYDOWN if is_pressed else WM_KEYUP
+        lparam = (1) | (scan_code << 16)
+        if not is_pressed:
+            lparam |= (1 << 31) | (1 << 30)
+        if is_extended:
+            lparam |= (1 << 24)
+        user32.PostMessageW(hw, msg, vk, lparam)
+
+    # 2. Windows OS SendInput - ONLY when Hot Wheels is the active foreground window!
+    fg = user32.GetForegroundWindow()
+    if fg == hw:
+        flags = KEYEVENTF_SCANCODE
+        if not is_pressed:
+            flags |= KEYEVENTF_KEYUP
+        if is_extended:
+            flags |= KEYEVENTF_EXTENDEDKEY
+
+        inp = INPUT()
+        inp.type = INPUT_KEYBOARD
+        inp.ki.wVk = 0
+        inp.ki.wScan = scan_code
+        inp.ki.dwFlags = flags
+        inp.ki.time = 0
+        inp.ki.dwExtraInfo = 0
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
 
 # Scan code mappings
 SCANCODES = {
@@ -380,14 +384,8 @@ def process_controller_packet(data):
     update_key(f'{prefix}GAS', gas)
     update_key(f'{prefix}BRAKE', brake)
     update_key(f'{prefix}BOOST', boost)
-    if p == 1:
-        update_key(f'{prefix}ENTER', boost)  # Also sends Enter for menu select
     update_key(f'{prefix}DASH_LEFT', dash_left)
     update_key(f'{prefix}DASH_RIGHT', dash_right)
-    if p == 1 and dash_right:
-        update_key(f'{prefix}BACK', dash_right) # Also sends ESC for menu back
-    else:
-        update_key(f'{prefix}BACK', False)
 
     update_key(f'{prefix}INTERACT', interact)
     update_key(f'{prefix}RESPAWN', respawn)

@@ -104,11 +104,11 @@ class AirConsoleHost {
           if (this.qrImageEl && res.qrCode) this.qrImageEl.src = res.qrCode;
           if (this.urlDisplayEl) this.urlDisplayEl.textContent = res.controllerUrl;
 
-          // Virtual Controller test links
+          // Virtual Controller test links with dedicated player slots
           const testP1 = document.getElementById('test-p1-link');
           const testP2 = document.getElementById('test-p2-link');
-          if (testP1) testP1.href = res.controllerUrl;
-          if (testP2) testP2.href = res.controllerUrl;
+          if (testP1) testP1.href = `${res.controllerUrl}&slot=1`;
+          if (testP2) testP2.href = `${res.controllerUrl}&slot=2`;
 
           // Seamlessly restore already connected players if re-attached
           if (res.players) {
@@ -227,25 +227,42 @@ class AirConsoleHost {
     document.getElementById('open-dual-sim-btn')?.addEventListener('click', () => {
       window.sounds?.playClick();
       if (this.controllerUrl) {
-        window.open(this.controllerUrl, 'JoyCon_1', 'width=460,height=720,left=30,top=60');
+        window.open(`${this.controllerUrl}&slot=1`, 'JoyCon_1', 'width=460,height=720,left=30,top=60');
         setTimeout(() => {
-          window.open(this.controllerUrl, 'JoyCon_2', 'width=460,height=720,left=520,top=60');
+          window.open(`${this.controllerUrl}&slot=2`, 'JoyCon_2', 'width=460,height=720,left=520,top=60');
         }, 350);
+      }
+    });
+
+    // Automatically blur buttons when clicked so DOM focus never triggers ghost clicks on Enter/Space
+    document.addEventListener('click', (e) => {
+      if (e.target && typeof e.target.blur === 'function') {
+        e.target.blur();
       }
     });
   }
 
   bindKeyboardControls() {
     const keysDown = {};
+    const gameKeys = new Set([
+      'Space', 'Enter', 'Numpad0', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+      'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight', 'ControlRight', 'Slash'
+    ]);
 
     window.addEventListener('keydown', (e) => {
       if (!this.keyboardFallbackEnabled || !this.activeGame) return;
+      if (gameKeys.has(e.code)) {
+        e.preventDefault();
+      }
       keysDown[e.code] = true;
       this.evalKeyboardInput(keysDown);
     });
 
     window.addEventListener('keyup', (e) => {
       if (!this.keyboardFallbackEnabled || !this.activeGame) return;
+      if (gameKeys.has(e.code)) {
+        e.preventDefault();
+      }
       delete keysDown[e.code];
       this.evalKeyboardInput(keysDown);
     });
@@ -254,45 +271,49 @@ class AirConsoleHost {
   evalKeyboardInput(keys) {
     if (!this.activeGame) return;
 
-    // Player 1 (WASD)
-    let p1X = 0;
-    let p1Y = 0;
-    if (keys['KeyA']) p1X -= 1;
-    if (keys['KeyD']) p1X += 1;
-    if (keys['KeyW']) p1Y -= 1;
-    if (keys['KeyS']) p1Y += 1;
+    // Player 1 (WASD) - Only active when mobile Player 1 is NOT connected
+    if (!this.players[1]) {
+      let p1X = 0;
+      let p1Y = 0;
+      if (keys['KeyA']) p1X -= 1;
+      if (keys['KeyD']) p1X += 1;
+      if (keys['KeyW']) p1Y -= 1;
+      if (keys['KeyS']) p1Y += 1;
 
-    this.activeGame.handlePlayerInput(1, {
-      x: p1X,
-      y: p1Y,
-      fire: !!keys['Space'],
-      btnA: !!keys['Space'],
-      boost: !!keys['ShiftLeft'],
-      btnB: !!keys['ShiftLeft'],
-      shield: !!keys['KeyE'],
-      btnX: !!keys['KeyE'],
-      btnY: !!keys['KeyQ']
-    });
+      this.activeGame.handlePlayerInput(1, {
+        x: p1X,
+        y: p1Y,
+        fire: !!keys['Space'],
+        btnA: !!keys['Space'],
+        boost: !!keys['ShiftLeft'],
+        btnB: !!keys['ShiftLeft'],
+        shield: !!keys['KeyE'],
+        btnX: !!keys['KeyE'],
+        btnY: !!keys['KeyQ']
+      });
+    }
 
-    // Player 2 (Arrows)
-    let p2X = 0;
-    let p2Y = 0;
-    if (keys['ArrowLeft']) p2X -= 1;
-    if (keys['ArrowRight']) p2X += 1;
-    if (keys['ArrowUp']) p2Y -= 1;
-    if (keys['ArrowDown']) p2Y += 1;
+    // Player 2 (Arrows) - Only active when mobile Player 2 is NOT connected
+    if (!this.players[2]) {
+      let p2X = 0;
+      let p2Y = 0;
+      if (keys['ArrowLeft']) p2X -= 1;
+      if (keys['ArrowRight']) p2X += 1;
+      if (keys['ArrowUp']) p2Y -= 1;
+      if (keys['ArrowDown']) p2Y += 1;
 
-    this.activeGame.handlePlayerInput(2, {
-      x: p2X,
-      y: p2Y,
-      fire: !!keys['Enter'] || !!keys['Numpad0'],
-      btnA: !!keys['Enter'] || !!keys['Numpad0'],
-      boost: !!keys['ControlRight'],
-      btnB: !!keys['ControlRight'],
-      shield: !!keys['ShiftRight'],
-      btnX: !!keys['ShiftRight'],
-      btnY: !!keys['Slash']
-    });
+      this.activeGame.handlePlayerInput(2, {
+        x: p2X,
+        y: p2Y,
+        fire: !!keys['Enter'] || !!keys['Numpad0'],
+        btnA: !!keys['Enter'] || !!keys['Numpad0'],
+        boost: !!keys['ControlRight'],
+        btnB: !!keys['ControlRight'],
+        shield: !!keys['ShiftRight'],
+        btnX: !!keys['ShiftRight'],
+        btnY: !!keys['Slash']
+      });
+    }
   }
 
   syncToMobile(playerNumber, type, payload) {
