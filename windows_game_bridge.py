@@ -256,14 +256,34 @@ def process_controller_packet(data):
     # Any button activity ensures game window is active
     ensure_game_focus()
 
-    # RT -> Accelerator (Gas)
-    gas = bool(data.get('btnRT') or data.get('rt') or data.get('gas') or data.get('accelerator'))
+    # RT / A Button / Joystick Up -> Accelerator (Gas)
+    gas = bool(
+        data.get('gas') or
+        data.get('btnRT') or
+        data.get('btnA') or
+        data.get('rt') or
+        data.get('accel') or
+        data.get('fire') or
+        (float(data.get('y', 0)) < -0.3)
+    )
 
-    # LT -> Brake / Reverse
-    brake = bool(data.get('btnLT') or data.get('lt') or data.get('brake'))
+    # LT / B Button / Joystick Down -> Brake / Reverse
+    brake = bool(
+        data.get('brake') or
+        data.get('btnLT') or
+        data.get('btnB') or
+        data.get('lt') or
+        (float(data.get('y', 0)) > 0.3)
+    )
 
-    # A Button -> Boost + Menu Confirm
-    boost = bool(data.get('btnA') or data.get('boost'))
+    # Y / X / RB Button -> Nitro Boost
+    boost = bool(
+        data.get('boost') or
+        data.get('btnY') or
+        data.get('btnX') or
+        data.get('btnRB') or
+        data.get('rb')
+    )
 
     # X Button -> Dash to Left
     dash_left = bool(data.get('btnX') or data.get('dashLeft'))
@@ -275,7 +295,7 @@ def process_controller_packet(data):
     interact = bool(data.get('btnY') or data.get('interact'))
 
     # RB -> Respawn
-    respawn = bool(data.get('btnRB') or data.get('rb') or data.get('respawn'))
+    respawn = bool(data.get('respawn') or data.get('btnLB') or data.get('lb') or data.get('btnRB') or data.get('select'))
 
     # LB -> Look Back
     lookback = bool(data.get('btnLB') or data.get('lb') or data.get('lookback'))
@@ -364,24 +384,83 @@ def process_key_packet(data):
             user32.keybd_event(vk, 0, 0, 0)
             user32.keybd_event(vk, 0, 2, 0)
 
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class BridgeHTTPHandler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        hw = find_hotwheels_window()
+        self.wfile.write(json.dumps({'status': 'ok', 'bridge': 'active', 'hotwheels_hwnd': hw}).encode('utf-8'))
+
+    def do_POST(self):
+        content_len = int(self.headers.get('Content-Length', 0))
+        post_body = self.rfile.read(content_len)
+        try:
+            data = json.loads(post_body.decode('utf-8'))
+            if data.get('type') == 'mouse':
+                process_mouse_packet(data)
+            elif data.get('type') == 'key':
+                process_key_packet(data)
+            else:
+                process_controller_packet(data)
+        except Exception:
+            pass
+
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{"success":true}')
+
+    def log_message(self, format, *args):
+        return
+
+def start_http_server(port=8088):
+    try:
+        server = HTTPServer(('127.0.0.1', port), BridgeHTTPHandler)
+        print(f"[Windows DirectInput Bridge] HTTP Receiver listening on http://127.0.0.1:{port}", flush=True)
+        server.serve_forever()
+    except Exception as e:
+        print(f"[Windows DirectInput Bridge] HTTP Receiver notice: {e}", flush=True)
+
 def main():
     hw = find_hotwheels_window()
     print(f"[Windows DirectInput Bridge] Ready! Hot Wheels Window: {hw}", flush=True)
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            packet = json.loads(line)
-            ptype = packet.get('type')
-            if ptype == 'mouse':
-                process_mouse_packet(packet)
-            elif ptype == 'key':
-                process_key_packet(packet)
-            else:
-                process_controller_packet(packet)
-        except Exception:
-            pass
+    t = threading.Thread(target=start_http_server, daemon=True)
+    t.start()
+
+    try:
+        for line in sys.stdin:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                packet = json.loads(line)
+                ptype = packet.get('type')
+                if ptype == 'mouse':
+                    process_mouse_packet(packet)
+                elif ptype == 'key':
+                    process_key_packet(packet)
+                else:
+                    process_controller_packet(packet)
+            except Exception:
+                pass
+    except (KeyboardInterrupt, SystemExit):
+        release_all()
+    except Exception:
+        while True:
+            time.sleep(1)
 
 if __name__ == '__main__':
     main()

@@ -35,7 +35,7 @@ export class GamepadMode {
         <div class="max-w-4xl w-full flex flex-col items-center">
           <div class="flex items-center gap-3 mb-2">
             <span class="text-4xl">🎮</span>
-            <h2 class="font-orbitron font-black text-3xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">
+            <h2 class="font-orbitron font-black text-3xl tracking-wider text-white">
               UNIVERSAL PC GAMEPAD MODE
             </h2>
           </div>
@@ -46,17 +46,17 @@ export class GamepadMode {
           <!-- Dual Gamepad Live Visualizers -->
           <div class="grid grid-cols-2 gap-8 w-full mb-8">
             <!-- Player 1 Controller Visualizer -->
-            <div class="cyber-card p-6 rounded-3xl border border-cyan-500/40 bg-slate-900/60 flex flex-col items-center">
+            <div class="cyber-card p-6 rounded-3xl border border-blue-600/40 bg-slate-900/60 flex flex-col items-center">
               <div class="flex items-center justify-between w-full mb-4">
-                <span class="font-orbitron text-xs font-black text-cyan-400">PLAYER 1 [JOY-CON CYAN]</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300">KEYS: W A S D + Space</span>
+                <span class="font-orbitron text-xs font-black text-blue-400">PLAYER 1 CONTROLLER [BLUE]</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-900/40 text-blue-300">KEYS: W A S D + Space</span>
               </div>
 
               <!-- Controller Mockup -->
-              <div class="relative w-64 h-36 bg-slate-950 border-2 border-cyan-400/50 rounded-3xl p-4 flex justify-between items-center shadow-[0_0_25px_rgba(0,240,255,0.2)]">
+              <div class="relative w-64 h-36 bg-slate-950 border border-slate-700 rounded-3xl p-4 flex justify-between items-center">
                 <!-- Left Stick Visual -->
-                <div class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-400 flex items-center justify-center relative">
-                  <div id="vis-p1-stick" class="w-8 h-8 rounded-full bg-cyan-400 transition-transform duration-75"></div>
+                <div class="w-16 h-16 rounded-full bg-slate-900 border border-blue-500 flex items-center justify-center relative">
+                  <div id="vis-p1-stick" class="w-8 h-8 rounded-full bg-blue-500 transition-transform duration-75"></div>
                 </div>
 
                 <!-- Action Diamond -->
@@ -69,23 +69,23 @@ export class GamepadMode {
               </div>
 
               <div class="mt-4 text-[11px] font-mono text-slate-400 text-center space-y-1">
-                <p>Stick: <b class="text-cyan-300">W, A, S, D</b></p>
+                <p>Stick: <b class="text-blue-400">W, A, S, D</b></p>
                 <p>Buttons: <b class="text-emerald-400">[A] Space</b> | <b class="text-rose-400">[B] Shift</b> | <b class="text-blue-400">[X] E</b> | <b class="text-yellow-400">[Y] Q</b></p>
               </div>
             </div>
 
             <!-- Player 2 Controller Visualizer -->
-            <div class="cyber-card p-6 rounded-3xl border border-pink-500/40 bg-slate-900/60 flex flex-col items-center">
+            <div class="cyber-card p-6 rounded-3xl border border-rose-600/40 bg-slate-900/60 flex flex-col items-center">
               <div class="flex items-center justify-between w-full mb-4">
-                <span class="font-orbitron text-xs font-black text-pink-400">PLAYER 2 [JOY-CON PINK]</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300">KEYS: Arrows + Enter</span>
+                <span class="font-orbitron text-xs font-black text-rose-400">PLAYER 2 CONTROLLER [RED]</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-900/40 text-rose-300">KEYS: Arrows + Enter</span>
               </div>
 
               <!-- Controller Mockup -->
-              <div class="relative w-64 h-36 bg-slate-950 border-2 border-pink-500/50 rounded-3xl p-4 flex justify-between items-center shadow-[0_0_25px_rgba(255,0,127,0.2)]">
+              <div class="relative w-64 h-36 bg-slate-950 border border-slate-700 rounded-3xl p-4 flex justify-between items-center">
                 <!-- Left Stick Visual -->
-                <div class="w-16 h-16 rounded-full bg-slate-900 border border-pink-400 flex items-center justify-center relative">
-                  <div id="vis-p2-stick" class="w-8 h-8 rounded-full bg-pink-400 transition-transform duration-75"></div>
+                <div class="w-16 h-16 rounded-full bg-slate-900 border border-rose-500 flex items-center justify-center relative">
+                  <div id="vis-p2-stick" class="w-8 h-8 rounded-full bg-rose-500 transition-transform duration-75"></div>
                 </div>
 
                 <!-- Action Diamond -->
@@ -98,7 +98,7 @@ export class GamepadMode {
               </div>
 
               <div class="mt-4 text-[11px] font-mono text-slate-400 text-center space-y-1">
-                <p>Stick: <b class="text-pink-300">Arrow Keys</b></p>
+                <p>Stick: <b class="text-rose-400">Arrow Keys</b></p>
                 <p>Buttons: <b class="text-emerald-400">[A] Enter</b> | <b class="text-rose-400">[B] R-Ctrl</b> | <b class="text-blue-400">[X] R-Shift</b> | <b class="text-yellow-400">[Y] /</b></p>
               </div>
             </div>

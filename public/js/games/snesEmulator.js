@@ -28,13 +28,13 @@ export class SnesEmulator {
           <div class="flex items-center gap-3">
             <span class="text-3xl">🕹️</span>
             <div>
-              <h2 class="font-orbitron font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
+              <h2 class="font-orbitron font-black text-xl tracking-wider text-white">
                 SUPER FAMICOM / SNES 16-BIT CONSOLE
               </h2>
               <p class="text-[10px] font-mono text-slate-400">Play real .sfc & .smc multiplayer ROMs with your phones as controllers!</p>
             </div>
           </div>
-          <button id="snes-exit-btn" class="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-white/20 hover:border-cyan-400 text-xs font-mono text-slate-300 hover:text-white transition">
+          <button id="snes-exit-btn" class="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-white/20 hover:border-slate-500 text-xs font-mono text-slate-300 hover:text-white transition">
             ✕ EXIT EMULATOR
           </button>
         </div>
@@ -55,7 +55,7 @@ export class SnesEmulator {
             </p>
 
             <div class="flex flex-wrap gap-3 justify-center mb-6">
-              <label class="cyber-btn px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 font-orbitron font-bold text-xs tracking-wider text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer hover:brightness-110">
+              <label class="cyber-btn px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 font-orbitron font-bold text-xs tracking-wider text-white shadow-md cursor-pointer hover:brightness-110">
                 📁 SELECT .SFC FILE FROM LAPTOP
                 <input id="rom-file-input" type="file" accept=".sfc,.smc,.bin" class="hidden">
               </label>
@@ -63,7 +63,7 @@ export class SnesEmulator {
 
             <!-- Free Legal Download Recommendations -->
             <div class="p-4 rounded-2xl bg-slate-900/90 border border-white/10 text-left w-full text-[11px] font-mono text-slate-300 space-y-1.5">
-              <p class="font-bold text-cyan-400 mb-1">FREE MULTIPLAYER .SFC GAMES YOU CAN DOWNLOAD NOW:</p>
+              <p class="font-bold text-amber-400 mb-1">FREE MULTIPLAYER .SFC GAMES YOU CAN DOWNLOAD NOW:</p>
               <p>• <b class="text-white">Supercooked!</b> — 2-Player Co-op Kitchen Mayhem for SNES (<a href="https://itch.io/games/tag-snes" target="_blank" class="text-purple-400 underline">itch.io</a>)</p>
               <p>• <b class="text-white">Unarmed</b> — 2-4 Player Arena Action Brawler (<a href="https://itch.io/games/tag-multiplayer/tag-snes" target="_blank" class="text-purple-400 underline">itch.io</a>)</p>
               <p>• <b class="text-white">N-Warp Daisakusen</b> — Legendary 8-Player Party Game for SNES</p>
@@ -82,8 +82,8 @@ export class SnesEmulator {
         <div class="w-full max-w-4xl bg-slate-950/80 border border-white/10 rounded-2xl p-3 flex items-center justify-between text-xs font-mono mt-3">
           <div class="flex items-center gap-4">
             <span class="text-slate-400">CONTROLLERS:</span>
-            <span class="text-cyan-400 font-bold">Joy-Con 1 = SNES P1</span>
-            <span class="text-pink-400 font-bold">Joy-Con 2 = SNES P2</span>
+            <span class="text-cyan-400 font-bold">Player 1 [Blue] = SNES P1</span>
+            <span class="text-pink-400 font-bold">Player 2 [Red] = SNES P2</span>
           </div>
           <span id="snes-status-text" class="text-purple-300 font-bold">Waiting for .sfc ROM...</span>
         </div>
@@ -105,16 +105,16 @@ export class SnesEmulator {
 
     box?.addEventListener('dragover', (e) => {
       e.preventDefault();
-      box.classList.add('border-cyan-400', 'bg-purple-950/20');
+      box.classList.add('border-slate-400', 'bg-slate-800/40');
     });
 
     box?.addEventListener('dragleave', () => {
-      box.classList.remove('border-cyan-400', 'bg-purple-950/20');
+      box.classList.remove('border-slate-400', 'bg-slate-800/40');
     });
 
     box?.addEventListener('drop', (e) => {
       e.preventDefault();
-      box.classList.remove('border-cyan-400', 'bg-purple-950/20');
+      box.classList.remove('border-slate-400', 'bg-slate-800/40');
       const file = e.dataTransfer?.files?.[0];
       if (file && (file.name.endsWith('.sfc') || file.name.endsWith('.smc') || file.name.endsWith('.bin'))) {
         this.loadRomFromFile(file);

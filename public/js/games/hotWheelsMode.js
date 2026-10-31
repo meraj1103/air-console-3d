@@ -35,7 +35,12 @@ export class HotWheelsMode {
 
     this.activeKeys = new Set();
     this.animId = null;
+    this.bridgeActive = null;
+    this.bridgeCheckCount = 0;
+    this.lastBridgeSendTime = 0;
     this.render();
+    this.checkBridgeStatus();
+    this.bridgeInterval = setInterval(() => this.checkBridgeStatus(), 6000);
     this.startSimulationLoop();
   }
 
@@ -230,8 +235,8 @@ export class HotWheelsMode {
             <p class="text-slate-400 text-[11px]">• Playing on Render in cloud? Run <code class="text-amber-300 bg-slate-950 px-1 py-0.5 rounded">python windows_game_bridge.py</code> on your laptop so keystrokes reach Hot Wheels directly!</p>
           </div>
           <div class="text-right shrink-0">
-            <span class="inline-block px-3 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-600/40 text-emerald-300 font-bold">
-              ✓ CAR RACING ENGINE READY
+            <span id="hw-bridge-badge" class="inline-block px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-bold">
+              ⚪ CHECKING PC BRIDGE...
             </span>
             <p class="text-[10px] text-slate-400 mt-1">Tap pedals on phone to test!</p>
           </div>
@@ -314,6 +319,19 @@ export class HotWheelsMode {
     car.brake = brake;
     car.boost = boost;
     car.respawn = respawn;
+
+    // Send to local Windows DirectInput bridge (for Hot Wheels PC game)
+    this.sendToLocalBridge({
+      playerNumber,
+      gas,
+      brake,
+      boost,
+      respawn,
+      pause,
+      steer,
+      tiltX: input.tiltX || 0,
+      x: steer
+    });
 
     // Dispatch Keyboard events for laptop
     this.dispatchKey(km.steerLeft, steerLeft);
@@ -430,12 +448,54 @@ export class HotWheelsMode {
     }
   }
 
+  checkBridgeStatus() {
+    this.bridgeCheckCount++;
+    fetch('http://127.0.0.1:8088/', { method: 'GET', mode: 'cors' })
+      .then(res => res.json())
+      .then(data => {
+        this.bridgeActive = true;
+        const badge = document.getElementById('hw-bridge-badge');
+        if (badge) {
+          const gameFound = data && data.hotwheels_hwnd;
+          badge.className = 'inline-block px-3 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-600/40 text-emerald-300 font-bold';
+          badge.innerHTML = gameFound
+            ? '🟢 PC BRIDGE: HOT WHEELS ACTIVE'
+            : '🟢 PC DIRECTINPUT BRIDGE READY';
+        }
+      })
+      .catch(() => {
+        this.bridgeActive = false;
+        const badge = document.getElementById('hw-bridge-badge');
+        if (badge) {
+          badge.className = 'inline-block px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-bold';
+          badge.innerHTML = '⚪ PC BRIDGE: DOUBLE-CLICK start_hotwheels_bridge.bat';
+        }
+      });
+  }
+
+  sendToLocalBridge(payload) {
+    const now = performance.now();
+    if (now - this.lastBridgeSendTime < 25) return;
+    this.lastBridgeSendTime = now;
+
+    fetch('http://127.0.0.1:8088/', {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  }
+
   start() {}
   startCountdown(cb) { if (cb) cb(); }
   stop() {
     if (this.animId) {
       cancelAnimationFrame(this.animId);
       this.animId = null;
+    }
+    if (this.bridgeInterval) {
+      clearInterval(this.bridgeInterval);
+      this.bridgeInterval = null;
     }
     this.activeKeys.forEach((code) => {
       window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
