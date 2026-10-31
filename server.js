@@ -279,6 +279,39 @@ io.on('connection', (socket) => {
     }
   });
 
+  // WebRTC Screen Mirroring & Remote Desktop Signaling
+  socket.on('webrtc-offer', (data) => {
+    if (!socket.roomCode) return;
+    socket.to(socket.roomCode).emit('webrtc-offer', data);
+  });
+
+  socket.on('webrtc-answer', (data) => {
+    if (!socket.roomCode) return;
+    socket.to(socket.roomCode).emit('webrtc-answer', data);
+  });
+
+  socket.on('webrtc-ice-candidate', (data) => {
+    if (!socket.roomCode) return;
+    socket.to(socket.roomCode).emit('webrtc-ice-candidate', data);
+  });
+
+  // Remote Desktop Mouse & Keyboard from Phone
+  socket.on('remote-mouse', (mouseData) => {
+    if (pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
+      try {
+        pythonBridge.stdin.write(JSON.stringify({ type: 'mouse', ...mouseData }) + '\n');
+      } catch (e) {}
+    }
+  });
+
+  socket.on('remote-key', (keyData) => {
+    if (pythonBridge && pythonBridge.stdin && !pythonBridge.stdin.destroyed) {
+      try {
+        pythonBridge.stdin.write(JSON.stringify({ type: 'key', ...keyData }) + '\n');
+      } catch (e) {}
+    }
+  });
+
   // Broadcast to all players in the room (e.g. game start, game over, rematch)
   socket.on('broadcast-to-controllers', ({ type, payload }) => {
     if (!socket.roomCode) return;

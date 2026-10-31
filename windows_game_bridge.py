@@ -317,6 +317,53 @@ def process_controller_packet(data):
     update_key(f'{prefix}LEFT', steer_left)
     update_key(f'{prefix}RIGHT', steer_right)
 
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x000A
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
+MOUSEEVENTF_WHEEL = 0x0800
+
+def process_mouse_packet(data):
+    attach_to_user_desktop()
+    action = data.get('action')
+    screen_w = user32.GetSystemMetrics(0)
+    screen_h = user32.GetSystemMetrics(1)
+
+    if action == 'move':
+        x = int(float(data.get('x', 0)) * screen_w)
+        y = int(float(data.get('y', 0)) * screen_h)
+        user32.SetCursorPos(x, y)
+    elif action == 'click':
+        btn = data.get('button', 'left')
+        if btn == 'left':
+            user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        elif btn == 'right':
+            user32.mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
+            user32.mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+    elif action == 'down':
+        btn = data.get('button', 'left')
+        flag = MOUSEEVENTF_LEFTDOWN if btn == 'left' else MOUSEEVENTF_RIGHTDOWN
+        user32.mouse_event(flag, 0, 0, 0, 0)
+    elif action == 'up':
+        btn = data.get('button', 'left')
+        flag = MOUSEEVENTF_LEFTUP if btn == 'left' else MOUSEEVENTF_RIGHTUP
+        user32.mouse_event(flag, 0, 0, 0, 0)
+    elif action == 'scroll':
+        dy = int(float(data.get('deltaY', 0)) * -120)
+        user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, dy, 0)
+
+def process_key_packet(data):
+    attach_to_user_desktop()
+    char = data.get('char', '')
+    if char:
+        vk = user32.VkKeyScanW(ord(char)) & 0xFF
+        if vk:
+            user32.keybd_event(vk, 0, 0, 0)
+            user32.keybd_event(vk, 0, 2, 0)
+
 def main():
     hw = find_hotwheels_window()
     print(f"[Windows DirectInput Bridge] Ready! Hot Wheels Window: {hw}", flush=True)
@@ -326,7 +373,13 @@ def main():
             continue
         try:
             packet = json.loads(line)
-            process_controller_packet(packet)
+            ptype = packet.get('type')
+            if ptype == 'mouse':
+                process_mouse_packet(packet)
+            elif ptype == 'key':
+                process_key_packet(packet)
+            else:
+                process_controller_packet(packet)
         except Exception:
             pass
 
