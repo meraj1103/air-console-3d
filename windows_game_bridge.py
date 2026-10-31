@@ -241,6 +241,24 @@ atexit.register(release_all)
 signal.signal(signal.SIGINT, lambda s, f: (release_all(), sys.exit(0)))
 signal.signal(signal.SIGTERM, lambda s, f: (release_all(), sys.exit(0)))
 
+# ---------------------------------------------------------------------------
+# Virtual Xbox 360 Gamepad Engine (ViGEmBus)
+# Enables native 2-Player Split-Screen in Hot Wheels without keyboard conflicts
+# ---------------------------------------------------------------------------
+virtual_gamepads = {}
+vigem_available = False
+
+try:
+    import vgamepad as vg
+    virtual_gamepads[1] = vg.VX360Gamepad()
+    virtual_gamepads[2] = vg.VX360Gamepad()
+    vigem_available = True
+    print("[Windows Game Bridge] 🎮 2 Virtual Xbox 360 Controllers active (P1 & P2)!", flush=True)
+except Exception as e:
+    vigem_available = False
+    print(f"[Windows Game Bridge] ⚠️ Virtual Xbox Controller bus not connected: {e}", flush=True)
+    print("[Windows Game Bridge] 💡 Run 'INSTALL_VIRTUAL_CONTROLLERS.bat' to enable 2-Player Split Screen in Hot Wheels!", flush=True)
+
 def ensure_game_focus():
     hw = find_hotwheels_window()
     if hw:
@@ -316,7 +334,49 @@ def process_controller_packet(data):
     steer_left = steer < -0.18
     steer_right = steer > 0.18
 
-    # Update keystrokes
+    # 1. Native Virtual Xbox Controller update (Solves Split Screen & Camera Conflict!)
+    if vigem_available and p in virtual_gamepads:
+        gp = virtual_gamepads[p]
+        gp.reset()
+
+        # Left Thumbstick (Steer)
+        gp.left_joystick_float(x_value_float=float(steer), y_value_float=0.0)
+
+        # Triggers (Right Trigger = Gas, Left Trigger = Brake)
+        gp.right_trigger_float(value_float=1.0 if gas else 0.0)
+        gp.left_trigger_float(value_float=1.0 if brake else 0.0)
+
+        # Face & Shoulder Buttons
+        # In Hot Wheels Split Screen, pressing (A) joins Player 2!
+        if bool(data.get('btnA') or data.get('gas') or data.get('fire')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
+
+        if bool(data.get('btnB') or data.get('brake')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_B)
+
+        if bool(data.get('btnX') or data.get('dashLeft') or data.get('drift')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_X)
+
+        if bool(data.get('btnY') or data.get('boost') or data.get('interact')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_Y)
+
+        if bool(data.get('btnRB')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
+
+        if bool(data.get('btnLB') or data.get('respawn')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER)
+
+        if bool(data.get('start') or data.get('pause')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_START)
+
+        if bool(data.get('select') or data.get('map')):
+            gp.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_BACK)
+
+        gp.update()
+        # When virtual gamepads are active, skip keyboard injection so camera NEVER moves!
+        return
+
+    # Update fallback keystrokes (if virtual gamepad driver is not installed)
     update_key(f'{prefix}GAS', gas)
     update_key(f'{prefix}BRAKE', brake)
     update_key(f'{prefix}BOOST', boost)
