@@ -460,7 +460,7 @@ class MobileGamepad {
     const banner = document.getElementById('mobile-winner-text');
     if (banner) {
       banner.textContent = isWinner ? '🏆 VICTORY!' : '💀 DEFEAT';
-      banner.className = isWinner ? 'text-4xl font-black text-cyan-400' : 'text-4xl font-black text-slate-400';
+      banner.className = isWinner ? 'text-4xl font-black text-emerald-400' : 'text-4xl font-black text-slate-400';
     }
     this.rematchModal.classList.remove('hidden');
   }
@@ -653,7 +653,7 @@ class MobileGamepad {
     this.gyroNormalizedSteer = 0;
 
     if (this.gyroToggleBtn) {
-      this.gyroToggleBtn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
+      this.gyroToggleBtn.classList.add('bg-blue-600/30', 'text-blue-300', 'border-blue-500');
       this.gyroToggleBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border-white/20');
     }
     if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'WHEEL: ON';
@@ -744,7 +744,7 @@ class MobileGamepad {
     this.gyroNormalizedSteer = 0;
 
     if (this.gyroToggleBtn) {
-      this.gyroToggleBtn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-400', 'shadow-[0_0_15px_rgba(0,240,255,0.4)]');
+      this.gyroToggleBtn.classList.remove('bg-blue-600/30', 'text-blue-300', 'border-blue-500');
       this.gyroToggleBtn.classList.add('bg-slate-900', 'text-slate-300', 'border-white/20');
     }
     if (this.gyroStatusLabel) this.gyroStatusLabel.textContent = 'WHEEL: OFF';
@@ -848,7 +848,12 @@ class MobileGamepad {
       effectiveX = this.gyroNormalizedSteer;
     }
 
-    // High-speed, compact payload
+    const gasPressed = !!(this.input.btnRT || this.input.btnA || (typeof this.input.y === 'number' && this.input.y < -0.3));
+    const brakePressed = !!(this.input.btnLT || this.input.btnB || (typeof this.input.y === 'number' && this.input.y > 0.3));
+    const boostPressed = !!(this.input.btnY || this.input.btnX || this.input.btnRB);
+    const respawnPressed = !!(this.input.btnLB || this.input.select);
+
+    // High-speed, robust payload
     const payload = {
       x: Math.round(effectiveX * 100) / 100,
       y: Math.round(this.input.y * 100) / 100,
@@ -860,6 +865,11 @@ class MobileGamepad {
       btnLT: !!this.input.btnLT,
       btnRB: !!this.input.btnRB,
       btnLB: !!this.input.btnLB,
+      gas: gasPressed,
+      brake: brakePressed,
+      boost: boostPressed,
+      respawn: respawnPressed,
+      tiltX: typeof this.lastRawAngle === 'number' ? Math.round(this.lastRawAngle * 10) / 10 : 0,
       fire: !!(this.input.btnA || this.input.btnRT),
       jump: !!this.input.btnB
     };

@@ -162,13 +162,13 @@ class AirConsoleHost {
     if (this.startGameBtn) {
       if (pCount === 2) {
         this.startGameBtn.textContent = 'START 2-PLAYER BATTLE ⚡';
-        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-pink-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_35px_rgba(0,240,255,0.5)] hover:brightness-110 active:scale-95 cursor-pointer';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-md active:scale-95 cursor-pointer';
       } else if (pCount === 1) {
         this.startGameBtn.textContent = 'START GAME (PLAYER 1 VS AI BOT) 🤖';
-        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-[0_0_30px_rgba(0,255,136,0.4)] hover:brightness-110 active:scale-95 cursor-pointer';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-orbitron font-black text-base tracking-widest uppercase transition-all shadow-md active:scale-95 cursor-pointer';
       } else {
         this.startGameBtn.textContent = 'START (KEYBOARD / SIMULATOR) ⚡';
-        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-orbitron font-bold text-sm tracking-widest uppercase transition-all cursor-pointer border border-white/20';
+        this.startGameBtn.className = 'cyber-btn w-full py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-orbitron font-bold text-sm tracking-widest uppercase transition-all cursor-pointer border border-slate-700';
       }
     }
   }
@@ -178,11 +178,11 @@ class AirConsoleHost {
       btn.addEventListener('click', () => {
         window.sounds?.playClick();
         this.gameSelectorBtns.forEach(b => {
-          b.classList.remove('ring-2', 'ring-cyan-400', 'bg-cyan-500/10', 'border-cyan-400');
-          b.classList.add('border-white/10');
+          b.classList.remove('border-2', 'border-slate-400', 'bg-slate-800/80');
+          b.classList.add('border-slate-800');
         });
-        btn.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-500/10', 'border-cyan-400');
-        btn.classList.remove('border-white/10');
+        btn.classList.add('border-2', 'border-slate-400', 'bg-slate-800/80');
+        btn.classList.remove('border-slate-800');
         this.currentGameType = btn.dataset.game;
       });
     });
@@ -343,7 +343,7 @@ class AirConsoleHost {
     const titleEl = document.getElementById('current-game-title');
 
     if (this.currentGameType === 'kart') {
-      if (titleEl) titleEl.textContent = '🏎️ NEON KART: CYBER RACERS 3D';
+      if (titleEl) titleEl.textContent = '🏎️ PRO CAR RACERS 3D';
       this.activeGame = new KartGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
     } else if (this.currentGameType === 'bomb') {
       if (titleEl) titleEl.textContent = '💣 SUPER BOMB BRAWLERS 3D';
@@ -394,15 +394,15 @@ class AirConsoleHost {
     if (winnerId === 1) {
       if (winnerBanner) {
         winnerBanner.textContent = 'PLAYER 1 WINS!';
-        winnerBanner.className = 'font-orbitron font-black text-6xl tracking-wider text-cyan-400 drop-shadow-[0_0_35px_#00f0ff] mb-2';
+        winnerBanner.className = 'font-orbitron font-black text-5xl tracking-wider text-blue-400 mb-2';
       }
-      if (winnerSub) winnerSub.textContent = 'Joy-Con Cyan Champion!';
+      if (winnerSub) winnerSub.textContent = 'Player 1 Champion!';
     } else {
       if (winnerBanner) {
         winnerBanner.textContent = 'PLAYER 2 WINS!';
-        winnerBanner.className = 'font-orbitron font-black text-6xl tracking-wider text-pink-500 drop-shadow-[0_0_35px_#ff0055] mb-2';
+        winnerBanner.className = 'font-orbitron font-black text-5xl tracking-wider text-rose-400 mb-2';
       }
-      if (winnerSub) winnerSub.textContent = 'Joy-Con Pink Champion!';
+      if (winnerSub) winnerSub.textContent = 'Player 2 Champion!';
     }
 
     modal?.classList.remove('hidden');

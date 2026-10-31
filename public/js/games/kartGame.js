@@ -1,4 +1,4 @@
-// 🏎️ NEON KART: CYBER RACERS 3D (Party Racing Engine)
+// 🏎️ PRO CAR RACERS 3D (Party Racing Engine)
 import * as THREE from '/vendor/three/three.module.js';
 
 export class KartGame {
@@ -473,8 +473,8 @@ export class KartGame {
 
     k.input = {
       steer: steer,
-      accel: !!(input.fire || input.accel || input.btnA),
-      brake: !!(input.brake || input.btnB),
+      accel: !!(input.fire || input.accel || input.btnA || input.btnRT || input.gas || (typeof input.y === 'number' && input.y < -0.3)),
+      brake: !!(input.brake || input.btnB || input.btnLT || (typeof input.y === 'number' && input.y > 0.3)),
       drift: !!(input.boost || input.drift || input.btnX),
       item: !!(input.shield || input.item || input.btnY)
     };

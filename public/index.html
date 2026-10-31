@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ AIR-CONSOLE 3D | Arcade Console Hub</title>
+  <title>AIR-CONSOLE 3D | Arcade Console Hub</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Three.js (Served locally from node_modules) -->
@@ -15,12 +15,10 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="/css/screen.css">
 </head>
-<body class="bg-[#050811] text-slate-100 flex flex-col h-screen overflow-hidden select-none">
-  <!-- Scanline effect -->
-  <!-- Clean Matte Theme (No Scanlines) -->
+<body class="bg-[#090d16] text-slate-100 flex flex-col h-screen overflow-hidden select-none">
 
-  <!-- Top Console Status Bar (Nintendo Switch style) -->
-  <header class="h-16 border-b border-white/10 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between z-30 shrink-0">
+  <!-- Top Console Status Bar -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-8 flex items-center justify-between z-30 shrink-0">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shadow-sm">
         <span class="text-xl">⚡</span>
@@ -35,21 +33,21 @@
 
     <!-- Center Room Badge -->
     <div class="flex items-center gap-4">
-      <div class="flex items-center bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-1.5 shadow-sm">
+      <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl px-4 py-1.5 shadow-sm">
         <span class="text-xs text-slate-400 uppercase tracking-widest mr-2.5 font-mono">ROOM PIN:</span>
         <span id="room-code-display" class="font-orbitron text-2xl font-black text-slate-100 tracking-widest">----</span>
       </div>
-      <div id="connected-count-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold tracking-wider bg-slate-900/80 border border-white/10 text-slate-300">
+      <div id="connected-count-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold tracking-wider bg-slate-950 border border-slate-800 text-slate-300">
         0/2 PLAYERS
       </div>
     </div>
 
     <!-- Right Controls -->
     <div class="flex items-center gap-3">
-      <button id="mute-toggle-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-slate-500 text-xs font-mono text-slate-300 hover:text-white transition">
+      <button id="mute-toggle-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-500 text-xs font-mono text-slate-300 hover:text-white transition">
         🔊 SOUND ON
       </button>
-      <button onclick="document.getElementById('help-modal').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-slate-500 text-xs font-mono text-slate-300 hover:text-white transition">
+      <button onclick="document.getElementById('help-modal').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-500 text-xs font-mono text-slate-300 hover:text-white transition">
         ⌨️ KEYBOARD CONTROLS
       </button>
     </div>
@@ -72,13 +70,13 @@
             Scan with your phone camera or visit on mobile browser:
           </p>
 
-          <!-- Animated QR Frame -->
-          <div class="relative p-3 rounded-2xl bg-white border-2 border-slate-700 bg-white shadow-md mb-3">
+          <!-- QR Frame -->
+          <div class="relative p-3 rounded-2xl bg-white border-2 border-slate-700 shadow-md mb-3">
             <img id="qr-code-img" src="" alt="Connect QR Code" class="w-48 h-48 rounded-lg object-contain bg-white">
           </div>
 
           <!-- URL Pill with Copy button -->
-          <div class="w-full bg-white/90 border border-white/10 rounded-xl p-2 flex items-center justify-between gap-2 mb-2">
+          <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2 mb-2">
             <span id="connection-url" class="font-mono text-[11px] text-slate-300 truncate pl-2">http://...</span>
             <button id="copy-url-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-mono text-slate-200 transition shrink-0">
               COPY
@@ -87,17 +85,17 @@
           <p id="copy-notice" class="text-[10px] text-emerald-400 font-mono opacity-0 transition-opacity">✓ Copied to clipboard!</p>
 
           <!-- Quick Test Dual Simulators -->
-          <div class="mt-3 pt-3 border-t border-white/10 w-full flex flex-col items-center gap-2">
-            <button id="open-dual-sim-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 rounded-xl text-xs font-mono text-cyan-300 transition flex items-center justify-center gap-2">
+          <div class="mt-3 pt-3 border-t border-slate-800 w-full flex flex-col items-center gap-2">
+            <button id="open-dual-sim-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-mono text-slate-200 transition flex items-center justify-center gap-2">
               <span>📱📱</span>
               <span>Open 2 Phone Simulators Side-by-Side</span>
             </button>
             <div class="flex items-center gap-3">
               <span class="text-[10px] text-slate-400 font-mono">Or tabs:</span>
-              <a id="test-p1-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-cyan-900/40 border border-slate-800 rounded text-cyan-300 font-mono">
+              <a id="test-p1-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-blue-400 font-mono">
                 Phone 1 Tab ↗
               </a>
-              <a id="test-p2-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-pink-900/40 border border-pink-500/30 rounded text-pink-300 font-mono">
+              <a id="test-p2-link" href="#" target="_blank" class="px-2 py-0.5 text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-rose-400 font-mono">
                 Phone 2 Tab ↗
               </a>
             </div>
@@ -105,35 +103,35 @@
         </div>
       </div>
 
-      <!-- Right Column: Player Slots & 4 Games Library -->
+      <!-- Right Column: Player Slots & Games Library -->
       <div class="w-3/5 flex flex-col gap-5">
         <!-- Player Slots -->
         <div class="grid grid-cols-2 gap-4">
           <!-- Player 1 Slot -->
-          <div id="player1-slot" class="cyber-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
+          <div id="player1-slot" class="cyber-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col transition-all duration-300">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-mono tracking-widest text-white font-bold uppercase">JOY-CON 1 [CYAN]</span>
-              <span id="p1-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">READY</span>
+              <span class="text-xs font-mono tracking-widest text-blue-400 font-bold uppercase">PLAYER 1 [BLUE]</span>
+              <span id="p1-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-blue-900/40 text-blue-300 border border-blue-600/40 font-bold">READY</span>
             </div>
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+              <div class="w-10 h-10 rounded-xl bg-slate-800 border border-blue-600/50 flex items-center justify-center text-xl text-blue-400">
                 🎮
               </div>
               <div>
                 <p id="p1-status" class="text-xs font-mono text-slate-400">WAITING FOR PHONE 1...</p>
-                <p class="text-[10px] text-slate-500 font-mono">Controls Left Kart / Tank</p>
+                <p class="text-[10px] text-slate-500 font-mono">Controls Left Character / Racer</p>
               </div>
             </div>
           </div>
 
           <!-- Player 2 Slot -->
-          <div id="player2-slot" class="cyber-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 flex flex-col transition-all duration-300">
+          <div id="player2-slot" class="cyber-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col transition-all duration-300">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-mono tracking-widest text-pink-400 font-bold uppercase">JOY-CON 2 [PINK]</span>
-              <span id="p2-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300 border border-pink-400/40">READY</span>
+              <span class="text-xs font-mono tracking-widest text-rose-400 font-bold uppercase">PLAYER 2 [RED]</span>
+              <span id="p2-ready-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono bg-rose-900/40 text-rose-300 border border-rose-600/40 font-bold">READY</span>
             </div>
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-pink-950/60 border border-pink-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(255,0,85,0.2)]">
+              <div class="w-10 h-10 rounded-xl bg-slate-800 border border-rose-600/50 flex items-center justify-center text-xl text-rose-400">
                 📱
               </div>
               <div>
@@ -144,88 +142,88 @@
           </div>
         </div>
 
-        <!-- 4 Games Library -->
-        <div class="cyber-card p-5 rounded-3xl border border-white/10">
+        <!-- Games Library -->
+        <div class="cyber-card p-5 rounded-3xl border border-slate-800">
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-orbitron text-xs font-bold tracking-wider text-slate-300 uppercase">CONSOLE GAME LIBRARY</h2>
-            <span class="text-[11px] font-mono text-white">SELECT GAME TO LAUNCH</span>
+            <span class="text-[11px] font-mono text-slate-400">SELECT GAME TO LAUNCH</span>
           </div>
 
           <div class="grid grid-cols-2 gap-3 mb-4">
-            <!-- Game 1: Kart Racing -->
-            <div data-game="kart" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border-2 border-cyan-400 ring-2 ring-cyan-400 bg-cyan-500/10 transition-all hover:scale-[1.02]">
+            <!-- Game 1: Blade Duel 1v1 Fighting Game (Default selected) -->
+            <div data-game="fighter" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border-2 border-slate-400 bg-slate-800/80 transition-all hover:scale-[1.02]">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-white tracking-wider">🏎️ NEON KART 3D</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300 rounded">RACING</span>
+                <span class="font-orbitron text-xs font-black text-white tracking-wider">⚔️ BLADE DUEL 1v1</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-rose-600/20 text-rose-300 rounded font-bold">FULL ARENA</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Samurai brawler on ONE FULL SCREEN! Cursed village stage, heavy slashes, shurikens & combos!
+              </p>
+            </div>
+
+            <!-- Game 2: Hot Wheels Unleashed Console & Car Control -->
+            <div data-game="hotwheels" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-orange-400 tracking-wider">🏎️ HOT WHEELS CAR CONTROL</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-orange-600/20 text-orange-300 rounded font-bold">CONSOLE + PC</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-snug">
+                Interactive car cockpit & split-screen wheels! Tapping Gas, Brake, Steer & Boost drives the cars live!
+              </p>
+            </div>
+
+            <!-- Game 3: 3D Circuit Car Racing -->
+            <div data-game="kart" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-orbitron text-xs font-black text-blue-400 tracking-wider">🏎️ PRO CAR RACERS 3D</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-blue-600/20 text-blue-300 rounded font-bold">3D CIRCUIT</span>
               </div>
               <p class="text-[10px] text-slate-400 leading-snug">
                 Party racing track with drifting, nitro boost pads, missile attacks & 3 laps!
               </p>
             </div>
 
-            <!-- Game 2: Bomberman Brawlers -->
-            <div data-game="bomb" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+            <!-- Game 4: Bomberman Brawlers -->
+            <div data-game="bomb" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02]">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-pink-400 tracking-wider">💣 BOMB BRAWLERS 3D</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-pink-500/20 text-pink-300 rounded">ARCADE</span>
+                <span class="font-orbitron text-xs font-black text-purple-400 tracking-wider">💣 BOMB BRAWLERS 3D</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-purple-600/20 text-purple-300 rounded font-bold">ARCADE</span>
               </div>
               <p class="text-[10px] text-slate-400 leading-snug">
                 Destructible crates, powerups, ticking bombs & explosive chain reactions!
               </p>
             </div>
 
-            <!-- Game 3: Tank Showdown -->
-            <div data-game="tank" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+            <!-- Game 5: Tank Showdown -->
+            <div data-game="tank" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02]">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-orbitron text-xs font-black text-emerald-400 tracking-wider">🚀 CYBER TANKS 3D</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded">MECHA</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-600/20 text-emerald-300 rounded font-bold">MECHA</span>
               </div>
               <p class="text-[10px] text-slate-400 leading-snug">
                 Action-cam hover tanks with bouncing plasma cannons, forcefields & AI bot!
               </p>
             </div>
 
-            <!-- Game 4: Blade Duel 1v1 Fighting Game -->
-            <div data-game="fighter" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+            <!-- Game 6: Retro SNES .SFC Player -->
+            <div data-game="snes" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02]">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-rose-400 tracking-wider">⚔️ BLADE DUEL 1v1</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-rose-500/20 text-rose-300 rounded">NO SPLIT SCREEN</span>
-              </div>
-              <p class="text-[10px] text-slate-400 leading-snug">
-                Street Fighter style samurai brawler on ONE FULL SCREEN! Slashing combos & specials!
-              </p>
-            </div>
-
-            <!-- Game 5: Retro SNES .SFC Player -->
-            <div data-game="snes" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-purple-400 tracking-wider">🕹️ RETRO SNES (.SFC)</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded">16-BIT EMULATOR</span>
+                <span class="font-orbitron text-xs font-black text-amber-400 tracking-wider">🕹️ RETRO SNES (.SFC)</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-amber-600/20 text-amber-300 rounded font-bold">16-BIT EMULATOR</span>
               </div>
               <p class="text-[10px] text-slate-400 leading-snug">
                 Drag & drop ANY .sfc ROM! 2 phones become SNES Player 1 & 2 controllers!
               </p>
             </div>
 
-            <!-- Game 5: Hot Wheels Unleashed Console -->
-            <div data-game="hotwheels" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
+            <!-- Game 7: PC Gamepad Mode -->
+            <div data-game="gamepad" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 transition-all hover:scale-[1.02] col-span-2">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-orange-400 tracking-wider">🏎️ HOT WHEELS CONSOLE</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-orange-500/20 text-orange-300 rounded">SPLIT-SCREEN</span>
+                <span class="font-orbitron text-xs font-black text-slate-200 tracking-wider">🎮 UNIVERSAL PC GAMEPAD MODE</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-slate-700 text-slate-200 rounded font-bold">FOR ALL PC GAMES</span>
               </div>
               <p class="text-[10px] text-slate-400 leading-snug">
-                2 phones turn into dedicated steering wheels & gas/brake pedals for Hot Wheels!
-              </p>
-            </div>
-
-            <!-- Game 6: PC Gamepad Mode -->
-            <div data-game="gamepad" class="game-select-card cursor-pointer p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 transition-all hover:scale-[1.02]">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-orbitron text-xs font-black text-blue-400 tracking-wider">🎮 PC GAMEPAD MODE</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded">FOR PC GAMES</span>
-              </div>
-              <p class="text-[10px] text-slate-400 leading-snug">
-                Use your mobile phones as wireless controllers for ANY game on your laptop!
+                Use your mobile phones as wireless direct controllers for ANY game on your laptop!
               </p>
             </div>
           </div>
@@ -239,10 +237,10 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- 2. GAME VIEW (Three.js 3D Arena & Realtime HUD) -->
+    <!-- 2. GAME VIEW (Game Arena & Realtime HUD)       -->
     <!-- ============================================== -->
     <div id="game-view" class="hidden flex-1 relative w-full h-full">
-      <!-- 3D Canvas -->
+      <!-- 3D / Canvas Container -->
       <div id="game-canvas-container" class="absolute inset-0 w-full h-full z-10"></div>
 
       <!-- In-Game Top HUD Overlay -->
@@ -250,28 +248,28 @@
         <!-- Player 1 HUD -->
         <div class="cyber-card cyber-card-p1 p-4 rounded-2xl w-64 pointer-events-auto">
           <div class="flex items-center justify-between mb-1">
-            <span class="font-orbitron text-xs font-black text-white tracking-wider">PLAYER 1</span>
-            <span id="p1-score-display" class="font-orbitron text-xl font-black text-white ">0</span>
+            <span class="font-orbitron text-xs font-black text-blue-400 tracking-wider">PLAYER 1</span>
+            <span id="p1-score-display" class="font-orbitron text-xl font-black text-white">0</span>
           </div>
           <!-- Gauge Bar -->
-          <div class="w-full bg-white rounded-full h-3 p-0.5 border border-cyan-500/40 overflow-hidden mb-1">
-            <div id="p1-hp-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-150 w-full shadow-[0_0_10px_#00f0ff]"></div>
+          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-700 overflow-hidden mb-1">
+            <div id="p1-hp-bar" class="bg-blue-500 h-full rounded-full transition-all duration-150 w-full"></div>
           </div>
           <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
             <span id="p1-hp-text">100 HP</span>
             <span>BOOST</span>
           </div>
-          <div class="w-full bg-white rounded-full h-1.5 p-0.5 border border-white/10 overflow-hidden mt-1">
-            <div id="p1-boost-bar" class="bg-cyan-400 h-full rounded-full transition-all duration-75 w-full"></div>
+          <div class="w-full bg-slate-950 rounded-full h-1.5 p-0.5 border border-slate-750 overflow-hidden mt-1">
+            <div id="p1-boost-bar" class="bg-blue-400 h-full rounded-full transition-all duration-75 w-full"></div>
           </div>
         </div>
 
         <!-- Center Match Banner -->
         <div class="flex flex-col items-center pointer-events-auto">
-          <div class="px-5 py-1.5 rounded-full bg-white/90 border border-white/20 text-xs font-orbitron font-bold tracking-widest text-yellow-300 shadow-[0_0_15px_rgba(255,230,0,0.2)]">
-            <span id="current-game-title">NEON KART 3D</span>
+          <div class="px-5 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-xs font-orbitron font-bold tracking-widest text-slate-200 shadow-sm">
+            <span id="current-game-title">BLADE DUEL 1v1</span>
           </div>
-          <button id="exit-game-btn" class="mt-2 text-[10px] font-mono text-slate-300 hover:text-white bg-slate-900/80 border border-white/20 px-3 py-1 rounded-lg transition">
+          <button id="exit-game-btn" class="mt-2 text-[10px] font-mono text-slate-300 hover:text-white bg-slate-900/90 border border-slate-700 px-3 py-1 rounded-lg transition hover:bg-slate-800 cursor-pointer">
             ✕ RETURN TO CONSOLE MENU
           </button>
         </div>
@@ -279,19 +277,19 @@
         <!-- Player 2 HUD -->
         <div class="cyber-card cyber-card-p2 p-4 rounded-2xl w-64 pointer-events-auto text-right">
           <div class="flex items-center justify-between mb-1">
-            <span id="p2-score-display" class="font-orbitron text-xl font-black text-pink-500 glow-pink">0</span>
-            <span class="font-orbitron text-xs font-black text-pink-400 tracking-wider">PLAYER 2</span>
+            <span id="p2-score-display" class="font-orbitron text-xl font-black text-white">0</span>
+            <span class="font-orbitron text-xs font-black text-rose-400 tracking-wider">PLAYER 2</span>
           </div>
           <!-- Gauge Bar -->
-          <div class="w-full bg-white rounded-full h-3 p-0.5 border border-pink-500/40 overflow-hidden mb-1">
-            <div id="p2-hp-bar" class="bg-gradient-to-l from-pink-500 to-rose-400 h-full rounded-full transition-all duration-150 w-full shadow-[0_0_10px_#ff0055] ml-auto"></div>
+          <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-700 overflow-hidden mb-1">
+            <div id="p2-hp-bar" class="bg-rose-500 h-full rounded-full transition-all duration-150 w-full ml-auto"></div>
           </div>
           <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
             <span>BOOST</span>
             <span id="p2-hp-text">100 HP</span>
           </div>
-          <div class="w-full bg-white rounded-full h-1.5 p-0.5 border border-white/10 overflow-hidden mt-1">
-            <div id="p2-boost-bar" class="bg-pink-400 h-full rounded-full transition-all duration-75 w-full ml-auto"></div>
+          <div class="w-full bg-slate-950 rounded-full h-1.5 p-0.5 border border-slate-750 overflow-hidden mt-1">
+            <div id="p2-boost-bar" class="bg-rose-400 h-full rounded-full transition-all duration-75 w-full ml-auto"></div>
           </div>
         </div>
       </div>
@@ -302,7 +300,7 @@
   <!-- 3. COUNTDOWN OVERLAY ("3, 2, 1, GO!")         -->
   <!-- ============================================== -->
   <div id="countdown-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
-    <div id="countdown-text" class="font-orbitron font-black text-9xl text-white ">
+    <div id="countdown-text" class="font-orbitron font-black text-9xl text-white">
       3
     </div>
   </div>
@@ -311,20 +309,20 @@
   <!-- 4. VICTORY / ROUND OVER MODAL                  -->
   <!-- ============================================== -->
   <div id="victory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
-    <div class="cyber-card p-10 rounded-3xl max-w-lg w-full text-center border-2 border-slate-700 shadow-2xl">
+    <div class="cyber-card p-10 rounded-3xl max-w-lg w-full text-center border border-slate-700 shadow-2xl">
       <div class="text-6xl mb-4">🏆</div>
-      <h2 id="winner-banner" class="font-orbitron font-black text-5xl tracking-wider text-white  mb-2">
+      <h2 id="winner-banner" class="font-orbitron font-black text-4xl tracking-wider text-white mb-2">
         PLAYER 1 WINS!
       </h2>
       <p id="winner-sub" class="text-sm font-mono text-slate-300 mb-8">
-        Champion of the Cyber Arena!
+        Champion of the Match!
       </p>
 
       <div class="flex gap-4 justify-center">
-        <button id="rematch-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-orbitron font-bold text-sm tracking-widest text-white shadow-md">
+        <button id="rematch-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-orbitron font-bold text-sm tracking-widest text-white shadow-md cursor-pointer">
           PLAY AGAIN 🔄
         </button>
-        <button id="lobby-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/20 font-orbitron font-bold text-sm tracking-widest text-slate-200">
+        <button id="lobby-btn" class="cyber-btn px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-orbitron font-bold text-sm tracking-widest text-slate-200 cursor-pointer">
           ARCADE MENU ☰
         </button>
       </div>
@@ -333,27 +331,27 @@
 
   <!-- Keyboard Controls Help Modal -->
   <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onclick="this.classList.add('hidden')">
-    <div class="cyber-card p-8 rounded-3xl max-w-md w-full border border-white/20" onclick="event.stopPropagation()">
+    <div class="cyber-card p-8 rounded-3xl max-w-md w-full border border-slate-700" onclick="event.stopPropagation()">
       <div class="flex justify-between items-center mb-4">
         <h3 class="font-orbitron font-bold text-sm text-white">KEYBOARD FALLBACK CONTROLS</h3>
-        <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+        <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
       </div>
       <div class="space-y-4 text-xs font-mono">
-        <div class="p-3 rounded-xl bg-cyan-950/40 border border-slate-800">
-          <p class="font-bold text-white mb-1">PLAYER 1 [JOY-CON CYAN]:</p>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <p class="font-bold text-blue-400 mb-1">PLAYER 1 CONTROLLER [BLUE]:</p>
           <p>• Move / Steer: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">W</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">A</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">S</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">D</kbd></p>
-          <p class="mt-1">• Button (A) [Accel / Bomb / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Spacebar</kbd></p>
-          <p class="mt-1">• Button (B) [Brake / Reverse]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Left Shift</kbd></p>
-          <p class="mt-1">• Button (X) [Item / Shield]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">E</kbd></p>
-          <p class="mt-1">• Button (Y) [Nitro Boost]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Q</kbd></p>
+          <p class="mt-1">• Button (A) [Accel / Slash / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Spacebar</kbd></p>
+          <p class="mt-1">• Button (B) [Brake / Jump]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Left Shift</kbd></p>
+          <p class="mt-1">• Button (X) [Shuriken / Drift]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">E</kbd></p>
+          <p class="mt-1">• Button (Y) [Heavy / Nitro]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Q</kbd></p>
         </div>
-        <div class="p-3 rounded-xl bg-pink-950/40 border border-pink-500/30">
-          <p class="font-bold text-pink-400 mb-1">PLAYER 2 [JOY-CON PINK]:</p>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <p class="font-bold text-rose-400 mb-1">PLAYER 2 CONTROLLER [RED]:</p>
           <p>• Move / Steer: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Arrow Keys</kbd></p>
-          <p class="mt-1">• Button (A) [Accel / Bomb / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Num 0</kbd></p>
-          <p class="mt-1">• Button (B) [Brake / Reverse]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Ctrl</kbd></p>
-          <p class="mt-1">• Button (X) [Item / Shield]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Shift</kbd></p>
-          <p class="mt-1">• Button (Y) [Nitro Boost]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">/</kbd></p>
+          <p class="mt-1">• Button (A) [Accel / Slash / Fire]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Num 0</kbd></p>
+          <p class="mt-1">• Button (B) [Brake / Jump]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Ctrl</kbd></p>
+          <p class="mt-1">• Button (X) [Shuriken / Drift]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">Right Shift</kbd></p>
+          <p class="mt-1">• Button (Y) [Heavy / Nitro]: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded">/</kbd></p>
         </div>
       </div>
     </div>
