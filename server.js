@@ -6,12 +6,21 @@ const path = require('path');
 const QRCode = require('qrcode');
 const { spawn } = require('child_process');
 
-// 🚗 Windows Native DirectInput Hardware Bridge (Python)
+// 🚗 Windows Native DirectInput Hardware Bridge (Python) - Windows Only
+const fs = require('fs');
 let pythonBridge = null;
 
 function startPythonBridge() {
+  if (process.platform !== 'win32') {
+    console.log('[GameBridge] Non-Windows environment detected (e.g. Render Cloud). Skipping native hardware bridge.');
+    return;
+  }
+  const bridgeScript = path.join(__dirname, 'windows_game_bridge.py');
+  if (!fs.existsSync(bridgeScript)) {
+    console.log('[GameBridge] windows_game_bridge.py not found. Skipping.');
+    return;
+  }
   try {
-    const bridgeScript = path.join(__dirname, 'windows_game_bridge.py');
     pythonBridge = spawn('python', [bridgeScript], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -25,15 +34,15 @@ function startPythonBridge() {
     });
 
     pythonBridge.on('close', (code) => {
-      console.log('[GameBridge] Closed with code ' + code + '. Restarting in 3s...');
-      setTimeout(startPythonBridge, 3000);
+      console.log('[GameBridge] Closed with code ' + code + '. Restarting in 5s...');
+      setTimeout(startPythonBridge, 5000);
     });
   } catch (err) {
     console.error('[GameBridge Error] Could not start Python bridge:', err);
   }
 }
 
-// Start bridge automatically for native PC games
+// Start bridge automatically only on Windows
 startPythonBridge();
 
 const app = express();
@@ -42,7 +51,10 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
-  }
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket', 'polling']
 });
 
 const PORT = process.env.PORT || 3000;
@@ -184,8 +196,8 @@ io.on('connection', (socket) => {
         margin: 1,
         width: 280,
         color: {
-          dark: '#00f0ff',
-          light: '#070c18'
+          dark: '#111827',
+          light: '#ffffff'
         }
       });
     } catch (e) {
@@ -224,19 +236,37 @@ io.on('connection', (socket) => {
     console.log(`[Host Created] Persistent Room: ${roomCode} at ${controllerUrl}`);
   });
 
-  // Mobile controller connects to room (Supports Reconnection to preferred slot)
+  // Mobile controller connects to room (Supports Reconnection to preferred slot & ghost eviction)
   socket.on('join-room', ({ roomCode, deviceName, preferredSlot }, callback) => {
     const code = (roomCode || 'CYBER').toUpperCase().trim();
-    const room = rooms.get(code);
+    let room = rooms.get(code);
 
+    // Auto-create room if not yet initialized to prevent Render connection race conditions
     if (!room) {
-      if (callback) callback({ success: false, error: `Room ${code} not found. Please open the game screen first!` });
-      return;
+      room = {
+        code,
+        hostId: null,
+        qrCode: '',
+        hostDisconnectTimer: null,
+        players: {
+          1: { socketId: null, name: 'Player 1', ready: false, device: 'Mobile' },
+          2: { socketId: null, name: 'Player 2', ready: false, device: 'Mobile' }
+        },
+        selectedGame: 'fighter'
+      };
+      rooms.set(code, room);
     }
 
-    // Check which player slot is open (prefer previous slot on reconnect)
+    // Check which player slot is open (cleanly evict dead ghost sockets on reconnect)
     let assignedPlayerNumber = null;
-    if (preferredSlot && (!room.players[preferredSlot].socketId || room.players[preferredSlot].socketId === socket.id)) {
+    if (preferredSlot && (preferredSlot === 1 || preferredSlot === 2)) {
+      const existingSocketId = room.players[preferredSlot].socketId;
+      if (existingSocketId && existingSocketId !== socket.id) {
+        const oldSock = io.sockets.sockets.get(existingSocketId);
+        if (oldSock) {
+          try { oldSock.leave(code); oldSock.disconnect(true); } catch (e) {}
+        }
+      }
       assignedPlayerNumber = preferredSlot;
     } else if (!room.players[1].socketId || room.players[1].socketId === socket.id) {
       assignedPlayerNumber = 1;
@@ -245,12 +275,12 @@ io.on('connection', (socket) => {
     }
 
     if (!assignedPlayerNumber) {
-      if (callback) callback({ success: false, error: 'Room is already full (2 players connected).' });
+      if (callback) callback({ success: false, error: 'Room is currently full (2 players connected).' });
       return;
     }
 
     room.players[assignedPlayerNumber].socketId = socket.id;
-    room.players[assignedPlayerNumber].name = deviceName || (Player );
+    room.players[assignedPlayerNumber].name = deviceName || (`Player ${assignedPlayerNumber}`);
     room.players[assignedPlayerNumber].ready = true;
 
     socket.join(code);
@@ -266,13 +296,15 @@ io.on('connection', (socket) => {
       });
     }
 
-    // Notify Host
-    io.to(room.hostId).emit('player-joined', {
-      playerNumber: assignedPlayerNumber,
-      name: room.players[assignedPlayerNumber].name
-    });
+    // Notify Host if connected
+    if (room.hostId) {
+      io.to(room.hostId).emit('player-joined', {
+        playerNumber: assignedPlayerNumber,
+        name: room.players[assignedPlayerNumber].name
+      });
+    }
 
-    console.log(`[Player Joined] Player ${assignedPlayerNumber} (${room.players[assignedPlayerNumber].name}) connected to persistent room ${code}`);
+    console.log(`[Player Joined] Player ${assignedPlayerNumber} (${room.players[assignedPlayerNumber].name}) connected to room ${code}`);
   });
 
   socket.on('controller-input', (inputData) => {
@@ -372,21 +404,20 @@ io.on('connection', (socket) => {
   });
 
   // Handle disconnect
-  // Handle disconnect with 30-second Grace Period (Immune to network blips & page refreshes)
+  // Handle disconnect with 45-second Grace Period (Immune to network blips & page refreshes)
   socket.on('disconnect', () => {
     if (socket.isHost && socket.roomCode) {
       const room = rooms.get(socket.roomCode);
       if (room) {
-        console.log(`[Host Temp Disconnect] Holding Room ${socket.roomCode} for 30s grace period...`);
-        // Notify players host is briefly reconnecting (no disruptive alert)
+        console.log(`[Host Temp Disconnect] Holding Room ${socket.roomCode} for 45s grace period...`);
         socket.to(socket.roomCode).emit('host-reconnecting');
 
         if (room.hostDisconnectTimer) clearTimeout(room.hostDisconnectTimer);
         room.hostDisconnectTimer = setTimeout(() => {
-          console.log(`[Room Expired] Persistent Room ${socket.roomCode} deleted after 30s host inactivity.`);
+          console.log(`[Room Expired] Persistent Room ${socket.roomCode} deleted after 45s host inactivity.`);
           io.to(socket.roomCode).emit('host-disconnected');
           rooms.delete(socket.roomCode);
-        }, 30000);
+        }, 45000);
       }
     } else if (socket.roomCode && socket.playerNumber) {
       const room = rooms.get(socket.roomCode);
@@ -400,11 +431,15 @@ io.on('connection', (socket) => {
             }) + '\n');
           } catch (e) {}
         }
-        room.players[socket.playerNumber].socketId = null;
-        room.players[socket.playerNumber].ready = false;
-        io.to(room.hostId).emit('player-left', {
-          playerNumber: socket.playerNumber
-        });
+        if (room.players[socket.playerNumber].socketId === socket.id) {
+          room.players[socket.playerNumber].socketId = null;
+          room.players[socket.playerNumber].ready = false;
+        }
+        if (room.hostId) {
+          io.to(room.hostId).emit('player-left', {
+            playerNumber: socket.playerNumber
+          });
+        }
       }
     }
   });

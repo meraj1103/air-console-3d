@@ -9,7 +9,21 @@ import { FighterGame } from './games/fighterGame.js';
 
 class AirConsoleHost {
   constructor() {
-    this.socket = io();
+    this.socket = io({
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
+    });
+
+    // Render keep-alive heartbeat ping
+    setInterval(() => {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('ping-check', Date.now());
+      }
+    }, 15000);
     this.roomCode = null;
     this.controllerUrl = '';
     this.players = { 1: false, 2: false };
@@ -47,14 +61,14 @@ class AirConsoleHost {
   setPlayerConnected(playerNumber, name) {
     this.players[playerNumber] = true;
     if (playerNumber === 1) {
-      this.p1Slot?.classList.add('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+      this.p1Slot?.classList.add('border-blue-600', 'bg-blue-950/30');
       this.p1Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
-      if (this.p1Status) this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping mr-2"></span>JOY-CON 1: <b class="text-white">${name || 'Player 1'}</b>`;
+      if (this.p1Status) this.p1Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span>PLAYER 1: <b class="text-white">${name || 'Player 1'}</b>`;
       document.getElementById('p1-ready-badge')?.classList.remove('hidden');
     } else {
-      this.p2Slot?.classList.add('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+      this.p2Slot?.classList.add('border-rose-600', 'bg-rose-950/30');
       this.p2Slot?.classList.remove('border-white/10', 'bg-slate-900/40');
-      if (this.p2Status) this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping mr-2"></span>JOY-CON 2: <b class="text-white">${name || 'Player 2'}</b>`;
+      if (this.p2Status) this.p2Status.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2"></span>PLAYER 2: <b class="text-white">${name || 'Player 2'}</b>`;
       document.getElementById('p2-ready-badge')?.classList.remove('hidden');
     }
     this.checkStartReadiness();
@@ -63,14 +77,14 @@ class AirConsoleHost {
   setPlayerDisconnected(playerNumber) {
     this.players[playerNumber] = false;
     if (playerNumber === 1) {
-      this.p1Slot?.classList.remove('border-cyan-400', 'bg-cyan-950/40', 'shadow-[0_0_20px_rgba(0,240,255,0.2)]');
+      this.p1Slot?.classList.remove('border-blue-600', 'bg-blue-950/30');
       this.p1Slot?.classList.add('border-white/10', 'bg-slate-900/40');
-      if (this.p1Status) this.p1Status.innerHTML = `WAITING FOR PHONE 1...`;
+      if (this.p1Status) this.p1Status.innerHTML = `WAITING FOR PLAYER 1...`;
       document.getElementById('p1-ready-badge')?.classList.add('hidden');
     } else {
-      this.p2Slot?.classList.remove('border-pink-500', 'bg-pink-950/40', 'shadow-[0_0_20px_rgba(255,0,85,0.2)]');
+      this.p2Slot?.classList.remove('border-rose-600', 'bg-rose-950/30');
       this.p2Slot?.classList.add('border-white/10', 'bg-slate-900/40');
-      if (this.p2Status) this.p2Status.innerHTML = `WAITING FOR PHONE 2 (OR AI BOT)...`;
+      if (this.p2Status) this.p2Status.innerHTML = `WAITING FOR PLAYER 2...`;
       document.getElementById('p2-ready-badge')?.classList.add('hidden');
     }
     this.checkStartReadiness();

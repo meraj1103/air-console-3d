@@ -318,61 +318,61 @@ export class FighterGame {
 
   render() {
     this.container.innerHTML = `
-      <div class="relative w-full h-full flex flex-col items-center justify-center bg-slate-950 overflow-hidden select-none">
-        <!-- Stage Selector Chips (Theme Switcher) -->
+      <div class="relative w-full h-full flex flex-col items-center justify-center bg-[#0a0d14] overflow-hidden select-none">
+        <!-- Stage Selector Chips (Clean Matte Finish) -->
         <div class="absolute top-2 left-0 right-0 z-30 flex items-center justify-center gap-2">
-          <button id="stage-btn-cyber" class="stage-chip active px-3.5 py-1 rounded-full text-[11px] font-mono bg-cyan-950/90 border border-cyan-400 text-cyan-200 hover:brightness-125 transition cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.4)]">🌆 CYBER RUINS</button>
-          <button id="stage-btn-dojo" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🏯 SUNSET DOJO</button>
-          <button id="stage-btn-shrine" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">⛩️ NIGHT SHRINE</button>
-          <button id="stage-btn-village" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-white/20 text-slate-300 hover:text-white transition cursor-pointer">🏚️ CURSED VILLAGE</button>
+          <button id="stage-btn-village" class="stage-chip active px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-800 border border-slate-600 text-white transition cursor-pointer shadow-sm">🏚️ BROKEN VILLAGE</button>
+          <button id="stage-btn-dojo" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition cursor-pointer">🏯 SUNSET DOJO</button>
+          <button id="stage-btn-shrine" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition cursor-pointer">⛩️ NIGHT SHRINE</button>
+          <button id="stage-btn-cyber" class="stage-chip px-3.5 py-1 rounded-full text-[11px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition cursor-pointer">🌆 RUINS</button>
         </div>
 
-        <!-- Top HUD (HP Bars & 60s Round Timer) -->
+        <!-- Top Combat HUD (HP Bars & 60s Round Timer) -->
         <div class="absolute top-10 left-6 right-6 z-20 flex items-center justify-between max-w-5xl mx-auto">
           <!-- Player 1 HP Bar (Cyborg Raider) -->
           <div class="w-2/5 flex flex-col items-start">
             <div class="flex items-center justify-between w-full mb-1">
-              <span class="font-orbitron font-black text-xs text-cyan-400 tracking-wider">P1: CYBORG RAIDER ⚡</span>
-              <span id="p1-hp-text" class="font-mono text-xs text-cyan-300 font-bold">100 HP</span>
+              <span class="font-orbitron font-bold text-xs text-blue-400 tracking-wider">P1: CYBORG</span>
+              <span id="p1-hp-text" class="font-mono text-xs text-slate-200 font-bold">100 HP</span>
             </div>
-            <div class="w-full h-5 rounded-lg bg-slate-900 border-2 border-cyan-400/50 p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-              <div id="p1-hp-bar" class="h-full rounded-md bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+            <div class="w-full h-5 rounded-lg bg-slate-900 border-2 border-slate-700 p-0.5 shadow-sm">
+              <div id="p1-hp-bar" class="h-full rounded-md bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-150" style="width: 100%;"></div>
             </div>
           </div>
 
           <!-- Round Timer -->
-          <div class="w-16 h-16 rounded-2xl bg-slate-900/95 border-2 border-yellow-400 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(255,230,0,0.4)] z-30">
-            <span id="fight-timer" class="font-orbitron font-black text-2xl text-yellow-300">60</span>
+          <div class="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-slate-700 flex flex-col items-center justify-center shadow-md z-30">
+            <span id="fight-timer" class="font-orbitron font-black text-2xl text-yellow-400">60</span>
           </div>
 
           <!-- Player 2 HP Bar (Giant Boss Ninja Kenji) -->
           <div class="w-2/5 flex flex-col items-end">
             <div class="flex items-center justify-between w-full mb-1">
-              <span id="p2-hp-text" class="font-mono text-xs text-pink-300 font-bold">100 HP</span>
-              <span class="font-orbitron font-black text-xs text-pink-500 tracking-wider">P2: GIANT NINJA KENJI 🥷</span>
+              <span id="p2-hp-text" class="font-mono text-xs text-slate-200 font-bold">100 HP</span>
+              <span class="font-orbitron font-bold text-xs text-rose-400 tracking-wider">P2: KENJI</span>
             </div>
-            <div class="w-full h-5 rounded-lg bg-slate-900 border-2 border-pink-500/50 p-0.5 shadow-[0_0_15px_rgba(255,0,85,0.3)] flex justify-end">
-              <div id="p2-hp-bar" class="h-full rounded-md bg-gradient-to-l from-pink-500 to-rose-400 transition-all duration-150" style="width: 100%;"></div>
+            <div class="w-full h-5 rounded-lg bg-slate-900 border-2 border-slate-700 p-0.5 shadow-sm flex justify-end">
+              <div id="p2-hp-bar" class="h-full rounded-md bg-gradient-to-l from-rose-600 to-rose-400 transition-all duration-150" style="width: 100%;"></div>
             </div>
           </div>
         </div>
 
         <!-- 1v1 Shared Fighting Arena Canvas (1024x576 HD) -->
-        <canvas id="fighter-canvas" width="1024" height="576" class="w-full h-full max-w-5xl max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"></canvas>
+        <canvas id="fighter-canvas" width="1024" height="576" class="w-full h-full max-w-5xl max-h-[85vh] object-contain rounded-2xl shadow-xl border border-slate-800"></canvas>
 
         <!-- KO / Victory Banner -->
-        <div id="fight-result-banner" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-          <h1 id="fight-result-text" class="font-orbitron font-black text-6xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-500 to-red-500 animate-bounce mb-3">
+        <div id="fight-result-banner" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm">
+          <h1 id="fight-result-text" class="font-orbitron font-black text-6xl tracking-widest text-red-500 mb-3">
             KNOCKOUT!
           </h1>
           <p id="fight-result-winner" class="font-mono text-xl text-white font-bold tracking-wider mb-6">
             🏆 PLAYER 1 WINS!
           </p>
           <div class="flex items-center gap-4">
-            <button id="fight-rematch-btn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 font-orbitron font-black text-base text-white shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:brightness-125 active:scale-95 transition cursor-pointer">
+            <button id="fight-rematch-btn" class="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-orbitron font-bold text-base text-white active:scale-95 transition cursor-pointer shadow-md">
               PLAY AGAIN ⚔️
             </button>
-            <button id="fight-menu-btn" class="px-6 py-3.5 rounded-2xl bg-slate-900 border border-white/20 font-orbitron font-bold text-sm text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition cursor-pointer">
+            <button id="fight-menu-btn" class="px-6 py-3.5 rounded-2xl bg-slate-800 border border-slate-700 font-orbitron font-bold text-sm text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition cursor-pointer shadow-sm">
               MAIN MENU 🏠
             </button>
           </div>
@@ -385,10 +385,10 @@ export class FighterGame {
     this.canvas = document.getElementById('fighter-canvas');
     this.c = this.canvas.getContext('2d');
 
-    // Default Theme: Cyber Ruins Stage (Neon Cyberpunk)
+    // Default Theme: Horror Broken Village (Requested by user)
     this.background = new Sprite({
       position: { x: 0, y: 0 },
-      imageSrc: '/assets/fighter/backgrounds/cyber_ruins_stage.png'
+      imageSrc: '/assets/fighter/backgrounds/cursed_village.png'
     });
 
     // Player 1 (Custom Cyborg Raider with Red Glowing Saber & Shuriken)
@@ -462,13 +462,13 @@ export class FighterGame {
       this.background.image = new Image();
       this.background.image.src = src;
       document.querySelectorAll('.stage-chip').forEach(btn => {
-        btn.classList.remove('active', 'border-cyan-400', 'bg-cyan-950/90', 'text-cyan-200', 'shadow-[0_0_12px_rgba(0,240,255,0.4)]');
-        btn.classList.add('bg-slate-900', 'border-white/20', 'text-slate-300');
+        btn.classList.remove('active', 'border-slate-600', 'bg-slate-800', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-slate-900', 'border-slate-800', 'text-slate-400');
       });
       const activeBtn = document.getElementById(btnId);
       if (activeBtn) {
-        activeBtn.classList.add('active', 'border-cyan-400', 'bg-cyan-950/90', 'text-cyan-200', 'shadow-[0_0_12px_rgba(0,240,255,0.4)]');
-        activeBtn.classList.remove('bg-slate-900', 'border-white/20', 'text-slate-300');
+        activeBtn.classList.add('active', 'border-slate-600', 'bg-slate-800', 'text-white', 'shadow-sm');
+        activeBtn.classList.remove('bg-slate-900', 'border-slate-800', 'text-slate-400');
       }
     };
 

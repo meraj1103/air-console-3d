@@ -3,7 +3,21 @@
 
 class MobileGamepad {
   constructor() {
-    this.socket = io();
+    this.socket = io({
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
+    });
+
+    // Render keep-alive heartbeat ping every 15s
+    setInterval(() => {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('ping-check', Date.now());
+      }
+    }, 15000);
     this.roomCode = null;
     this.playerNumber = null;
     this.isConnected = false;
@@ -305,13 +319,13 @@ class MobileGamepad {
     this.gamepadScreen.classList.remove('hidden');
 
     if (this.playerNumber === 1) {
-      this.playerBadge.textContent = 'JOY-CON 1 [CYAN]';
-      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-cyan-500/20 text-cyan-400 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.35)]';
-      this.gamepadScreen.style.setProperty('--player-color', '#00f0ff');
+      this.playerBadge.textContent = 'PLAYER 1 [BLUE]';
+      this.playerBadge.className = 'px-3 py-1 rounded-lg text-xs font-bold tracking-wider bg-blue-950 border border-blue-600 text-blue-300 shadow-sm';
+      this.gamepadScreen.style.setProperty('--player-color', '#3b82f6');
     } else {
-      this.playerBadge.textContent = 'JOY-CON 2 [PINK]';
-      this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-pink-500/20 text-pink-400 border border-pink-400/50 shadow-[0_0_15px_rgba(255,0,85,0.35)]';
-      this.gamepadScreen.style.setProperty('--player-color', '#ff0055');
+      this.playerBadge.textContent = 'PLAYER 2 [RED]';
+      this.playerBadge.className = 'px-3 py-1 rounded-lg text-xs font-bold tracking-wider bg-rose-950 border border-rose-600 text-rose-300 shadow-sm';
+      this.gamepadScreen.style.setProperty('--player-color', '#ef4444');
     }
 
     this.triggerHaptic([40, 20, 60]);
@@ -336,7 +350,7 @@ class MobileGamepad {
       this.showToast('Reconnecting to Host screen...');
       if (this.playerBadge) {
         this.playerBadge.textContent = 'RECONNECTING...';
-        this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-yellow-500/20 text-yellow-300 border border-yellow-400/50 animate-pulse';
+        this.playerBadge.className = 'px-3 py-1 rounded-lg text-xs font-bold tracking-wider bg-yellow-950 border border-yellow-600 text-yellow-300 shadow-sm';
       }
     });
 
@@ -361,7 +375,7 @@ class MobileGamepad {
       this.showToast(`Host laptop offline. Holding room ${this.roomCode || 'CYBER'}...`);
       if (this.playerBadge) {
         this.playerBadge.textContent = 'WAITING FOR HOST...';
-        this.playerBadge.className = 'px-3 py-1 rounded-full text-xs font-black tracking-widest bg-yellow-500/20 text-yellow-300 border border-yellow-400/50 animate-pulse';
+        this.playerBadge.className = 'px-3 py-1 rounded-lg text-xs font-bold tracking-wider bg-yellow-950 border border-yellow-600 text-yellow-300 shadow-sm';
       }
       if (this.reconnectInterval) clearInterval(this.reconnectInterval);
       this.reconnectInterval = setInterval(() => {

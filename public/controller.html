@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#080c16">
-  <title>AirConsole Xbox Joy-Con Controller</title>
+  <meta name="theme-color" content="#0c0f17">
+  <title>AirConsole Wireless Gamepad</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Socket.io -->
@@ -19,20 +19,18 @@
   <link rel="stylesheet" href="/css/controller.css">
 </head>
 
-<body class="bg-[#080c16] text-slate-100 flex flex-col h-screen w-screen overflow-hidden select-none">
-  <!-- Scanline overlay -->
-  <div class="fixed inset-0 phone-scanline z-40"></div>
+<body class="bg-[#0c0f17] text-slate-100 flex flex-col h-screen w-screen overflow-hidden select-none">
 
   <!-- Floating Fullscreen Overlay Pill (Always accessible from any screen) -->
   <button id="fs-floating-pill"
-    class="fixed top-2.5 right-2.5 z-50 px-3 py-1.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-cyan-300 font-orbitron font-bold text-[10px] tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.4)] backdrop-blur-md active:scale-95 transition cursor-pointer flex items-center gap-1.5">
+    class="fixed top-2.5 right-2.5 z-50 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 font-orbitron font-bold text-[10px] tracking-wider active:scale-95 transition cursor-pointer flex items-center gap-1.5 shadow-md">
     <span>⛶</span>
     <span id="floating-fs-label">FULLSCREEN</span>
   </button>
 
   <!-- Non-intrusive Reconnecting Toast -->
   <div id="reconnect-toast"
-    class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-slate-900/95 border-2 border-yellow-400/80 text-yellow-300 font-mono text-xs font-bold tracking-wider shadow-[0_0_20px_rgba(255,230,0,0.4)] flex items-center gap-2 pointer-events-none animate-pulse">
+    class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-slate-900 border border-yellow-500/70 text-yellow-300 font-mono text-xs font-bold tracking-wider flex items-center gap-2 pointer-events-none shadow-lg">
     <span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
     <span id="reconnect-toast-msg">Reconnecting to Host...</span>
   </div>
@@ -40,62 +38,61 @@
   <!-- ============================================== -->
   <!-- 1. JOIN SCREEN (PIN Entry / Auto-Connect)      -->
   <!-- ============================================== -->
-  <div id="join-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#080c16]">
+  <div id="join-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#0c0f17]">
     <div class="w-full max-w-sm flex flex-col items-center text-center">
       <div
-        class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-pink-500 flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(0,240,255,0.4)] mb-3">
+        class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-3xl mb-3 shadow-md">
         🎮
       </div>
-      <h1
-        class="font-orbitron font-black text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500 mb-1">
+      <h1 class="font-orbitron font-black text-2xl tracking-wider text-slate-100 mb-1">
         AIR-JOYCON
       </h1>
-      <p class="text-xs text-slate-400 font-mono mb-6">Wireless Xbox Controller for Hot Wheels Unleashed</p>
+      <p class="text-xs text-slate-400 font-mono mb-6">Wireless Gamepad Controller</p>
 
       <!-- Room Code Input -->
       <div class="w-full mb-4">
         <label class="block text-[11px] font-mono tracking-widest text-slate-400 mb-2 uppercase text-left">
-          Enter 4-Digit Room Code:
+          Enter Room Code:
         </label>
         <input id="room-input" type="text" maxlength="6" placeholder="CYBER" autocomplete="off"
           autocapitalize="characters"
-          class="w-full bg-slate-900 border-2 border-cyan-400/50 focus:border-cyan-400 focus:outline-none rounded-2xl py-3.5 text-center font-orbitron font-black text-3xl tracking-widest text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.15)] uppercase">
+          class="w-full bg-slate-900 border-2 border-slate-700 focus:border-slate-400 focus:outline-none rounded-2xl py-3.5 text-center font-orbitron font-black text-3xl tracking-widest text-white uppercase shadow-sm">
       </div>
 
       <p id="join-error"
-        class="hidden text-xs text-rose-400 font-mono mb-4 bg-rose-950/40 border border-rose-500/30 rounded-lg p-2.5 w-full">
+        class="hidden text-xs text-rose-400 font-mono mb-4 bg-rose-950/60 border border-rose-800 rounded-lg p-2.5 w-full">
       </p>
 
       <button id="join-fullscreen-btn"
-        class="mb-3 w-full py-2.5 rounded-xl bg-slate-900/90 border border-cyan-400/60 text-cyan-300 font-orbitron font-bold text-xs tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.25)] active:scale-95 transition cursor-pointer">
+        class="mb-3 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-orbitron font-bold text-xs tracking-wider flex items-center justify-center gap-2 active:scale-95 transition cursor-pointer shadow-sm">
         <span>⛶</span>
         <span>ENTER FULLSCREEN MODE</span>
       </button>
 
       <button id="join-btn"
-        class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-pink-500 font-orbitron font-black text-sm tracking-widest text-white shadow-[0_0_25px_rgba(0,240,255,0.4)] active:scale-95 transition cursor-pointer">
+        class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-orbitron font-black text-sm tracking-widest text-white active:scale-95 transition cursor-pointer shadow-md">
         CONNECT AS GAMEPAD ⚡
       </button>
 
       <!-- Fullscreen & Add to Home Screen Tips -->
-      <div class="mt-4 p-3 rounded-xl bg-slate-900/80 border border-white/10 text-[11px] text-slate-300 font-mono text-left space-y-1.5 w-full">
-        <p class="font-bold text-cyan-400 font-orbitron text-xs flex items-center gap-1">
+      <div class="mt-4 p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-mono text-left space-y-1.5 w-full">
+        <p class="font-bold text-slate-200 font-orbitron text-xs flex items-center gap-1">
           <span>⛶</span> HOW TO GET 100% FULLSCREEN:
         </p>
         <p>• <b>Android:</b> Tap the 3 dots <b>⋮</b> → <b>"Install app"</b> or <b>"Add to Home Screen"</b>.</p>
         <p>• <b>iPhone:</b> Tap Share <b>⎘</b> → <b>"Add to Home Screen"</b>.</p>
-        <p class="text-slate-400 text-[10px]">Or tap the cyan <b>⛶ FULLSCREEN</b> button once connected!</p>
+        <p class="text-slate-400 text-[10px]">Or tap the <b>⛶ FULLSCREEN</b> button once connected!</p>
       </div>
     </div>
   </div>
 
   <!-- ============================================== -->
-  <!-- 2. GAMEPAD SCREEN (Xbox Controller Layout)     -->
+  <!-- 2. GAMEPAD SCREEN (Console Gamepad Layout)     -->
   <!-- ============================================== -->
-  <div id="gamepad-screen" class="hidden flex flex-col h-full w-full relative">
+  <div id="gamepad-screen" class="hidden flex flex-col h-full w-full relative bg-[#0c0f17]">
     
     <!-- Top Triggers & Shoulder Buttons Bar (LT, LB, Status, RB, RT) -->
-    <header class="h-16 border-b border-white/10 bg-slate-950/95 px-2 flex items-center justify-between z-30 shrink-0">
+    <header class="h-16 border-b border-slate-800 bg-[#10141e] px-2 flex items-center justify-between z-30 shrink-0">
       
       <!-- Left Triggers: [LT: BRAKE] & [LB: LOOK BACK] -->
       <div class="flex items-center gap-1.5 shrink-0">
@@ -115,26 +112,26 @@
       <!-- Center LCD Stats & Gyro Mode Toggle -->
       <div class="flex items-center gap-2">
         <span id="player-badge"
-          class="px-2 py-0.5 rounded-full text-[10px] font-mono font-black tracking-wider bg-cyan-500/20 text-cyan-400 border border-cyan-400/40">
+          class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-slate-800 border border-slate-700 text-slate-200">
           JOY-CON 1
         </span>
 
         <!-- Gyro Steering Button in Header -->
         <button id="gyro-toggle-btn"
-          class="px-2 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-slate-900 border border-white/20 text-slate-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-sm cursor-pointer">
+          class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-slate-800 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-sm cursor-pointer">
           <span class="text-xs">🧭</span>
           <span id="gyro-status-label">WHEEL</span>
         </button>
 
         <!-- Header Fullscreen Button -->
         <button id="header-fullscreen-btn"
-          class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-cyan-950/80 border border-cyan-400/80 text-cyan-300 hover:text-white flex items-center gap-1 active:scale-95 transition shadow-[0_0_10px_rgba(0,240,255,0.25)] cursor-pointer">
+          class="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-sm">
           <span class="text-xs">⛶</span>
           <span id="header-fs-label">FULLSCREEN</span>
         </button>
 
         <span id="ping-badge" class="text-[9px] font-mono text-slate-400 flex items-center">
-          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1"></span>--ms
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1"></span>--ms
         </span>
       </div>
 
@@ -155,10 +152,10 @@
     </header>
 
     <!-- Main Controller Split (Left: Stick/Wheel | Right: Xbox Face Buttons) -->
-    <main class="flex-1 flex w-full relative touch-none overflow-hidden joycon-grip-left joycon-grip-right">
+    <main class="flex-1 flex w-full relative touch-none overflow-hidden bg-[#0c0f17]">
       
       <!-- Left Half: Dynamic Floating Thumbstick or Steering Wheel Zone -->
-      <div id="joystick-zone" class="w-1/2 h-full relative border-r border-white/10 flex items-center justify-center">
+      <div id="joystick-zone" class="w-1/2 h-full relative border-r border-slate-800 flex items-center justify-center">
         <!-- Floating Joystick Visual -->
         <div id="joystick-base" class="hidden">
           <div id="joystick-handle"></div>
@@ -167,88 +164,83 @@
         <!-- Ambient Guide (When Gyro is OFF) -->
         <div id="joystick-ambient-guide" class="pointer-events-none text-center opacity-30 flex flex-col items-center">
           <div
-            class="w-24 h-24 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-1">
+            class="w-24 h-24 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center mb-1">
             <span class="text-3xl">🕹️</span>
           </div>
           <span class="text-[10px] font-orbitron font-bold tracking-widest text-slate-400 uppercase">
-            STEER & PITCH (LS)
+            STEER & JUMP (LS)
           </span>
         </div>
 
         <!-- Virtual Gyro Steering Wheel HUD (Visible when Gyro is ON) -->
         <div id="gyro-steering-hud" class="hidden absolute inset-0 flex flex-col items-center justify-center pointer-events-auto p-3">
-          <!-- Live Interactive Rotating Cyber Wheel -->
-          <div id="gyro-wheel-graphic" class="w-36 h-36 rounded-full border-4 border-cyan-400 bg-slate-950/70 flex items-center justify-center relative shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-transform duration-75 cursor-grab">
-            <div class="w-16 h-2 bg-cyan-400 rounded-full"></div>
-            <div class="w-2 h-16 bg-cyan-400/40 rounded-full absolute"></div>
-            <div class="w-12 h-12 rounded-full border-2 border-cyan-300 bg-slate-900 flex items-center justify-center text-lg z-10 shadow-[0_0_12px_#00f0ff]">
+          <div id="gyro-wheel-graphic" class="w-36 h-36 rounded-full border-4 border-slate-600 bg-slate-900 flex items-center justify-center relative shadow-lg transition-transform duration-75 cursor-grab">
+            <div class="w-16 h-2 bg-slate-500 rounded-full"></div>
+            <div class="w-2 h-16 bg-slate-600 rounded-full absolute"></div>
+            <div class="w-12 h-12 rounded-full border-2 border-slate-500 bg-slate-800 flex items-center justify-center text-lg z-10">
               🏎️
             </div>
-            <!-- Top Dead-Center Yellow Marker -->
-            <div class="absolute top-1 w-3.5 h-3.5 rounded-full bg-yellow-400 shadow-[0_0_8px_#ffeb3b]"></div>
+            <div class="absolute top-1 w-3.5 h-3.5 rounded-full bg-yellow-400"></div>
           </div>
-          <!-- Live Angle & Status Badge -->
           <div class="mt-2 flex flex-col items-center gap-0.5">
-            <span id="gyro-angle-display" class="font-orbitron font-black text-xs text-cyan-300 tracking-wider">0° [CENTERED]</span>
+            <span id="gyro-angle-display" class="font-orbitron font-bold text-xs text-slate-200 tracking-wider">0° [CENTERED]</span>
             <span class="text-[9px] font-mono text-slate-400 uppercase tracking-tight text-center">TILT PHONE OR DRAG WHEEL TO STEER</span>
           </div>
         </div>
       </div>
 
-      <!-- Right Half: 4-Button Xbox Diamond Pad (A: BOOST, B: DASH R, X: DASH L, Y: INTERACT) -->
+      <!-- Right Half: 4-Button Tactile Diamond Pad (A: BOOST/SLASH, B: JUMP, X: HEAVY SLASH, Y: SPECIAL) -->
       <div id="buttons-zone" class="w-1/2 h-full relative flex items-center justify-center">
         <div class="relative w-60 h-60 flex items-center justify-center">
           
-          <!-- Button Y (Top - Yellow / Interact with game elements) -->
+          <!-- Button Y (Top - Amber / Heavy / Special) -->
           <button id="btn-y" class="face-btn btn-y absolute top-1 text-slate-950 font-orbitron font-black">
             <span class="text-base font-black">Y</span>
-            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">INTERACT</span>
+            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">SPECIAL</span>
           </button>
 
-          <!-- Button X (Left - Blue / Dash to the Left) -->
+          <!-- Button X (Left - Blue / Attack 2) -->
           <button id="btn-x" class="face-btn btn-x absolute left-1 text-white font-orbitron font-black">
             <span class="text-base font-black">X</span>
-            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">◀ DASH L</span>
+            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">SLASH 2</span>
           </button>
 
-          <!-- Button B (Right - Red / Dash to the Right) -->
+          <!-- Button B (Right - Red / Jump) -->
           <button id="btn-b" class="face-btn btn-b absolute right-1 text-white font-orbitron font-black">
             <span class="text-base font-black">B</span>
-            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">DASH R ▶</span>
+            <span class="text-[7.5px] font-sans font-bold leading-none uppercase">JUMP</span>
           </button>
 
-          <!-- Button A (Bottom - Green / BOOST - Main Action) -->
-          <button id="btn-a" class="face-btn btn-a absolute bottom-1 text-slate-950 font-orbitron font-black scale-105 shadow-[0_0_25px_rgba(0,255,136,0.6)]">
+          <!-- Button A (Bottom - Green / Main Attack / Boost) -->
+          <button id="btn-a" class="face-btn btn-a absolute bottom-1 text-white font-orbitron font-black scale-105">
             <span class="text-lg font-black">A</span>
-            <span class="text-[8.5px] font-sans font-black leading-none uppercase">⚡ BOOST</span>
+            <span class="text-[8.5px] font-sans font-black leading-none uppercase">ATTACK</span>
           </button>
         </div>
       </div>
     </main>
 
     <!-- Bottom Utility Strip with VIEW (Map), MENU (Pause), Calibrate & Fullscreen -->
-    <footer class="h-12 border-t border-white/10 bg-slate-950/90 px-3 flex items-center justify-between text-xs text-slate-400 font-mono shrink-0">
-      <button id="gyro-calibrate-btn" class="hidden px-2 py-1 rounded-lg bg-cyan-950/90 border border-cyan-400 text-[9px] text-cyan-300 font-bold active:scale-95 shadow-[0_0_10px_rgba(0,240,255,0.25)] flex items-center gap-1 cursor-pointer">
+    <footer class="h-12 border-t border-slate-800 bg-[#10141e] px-3 flex items-center justify-between text-xs text-slate-400 font-mono shrink-0">
+      <button id="gyro-calibrate-btn" class="hidden px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-[9px] text-slate-300 font-bold active:scale-95 flex items-center gap-1 cursor-pointer">
         <span>🎯</span>
         <span>RESET CENTER</span>
       </button>
 
-      <!-- Xbox View (Map) & Menu (Pause) Center Buttons -->
+      <!-- Center Buttons -->
       <div class="flex items-center gap-3 mx-auto">
-        <!-- View Button (Island Map) -->
-        <button id="btn-view" class="px-3 py-1 rounded-lg bg-slate-800 border border-slate-600 active:scale-90 text-[10px] font-orbitron font-bold text-slate-300 shadow flex items-center gap-1">
+        <button id="btn-view" class="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 active:scale-90 text-[10px] font-orbitron font-bold text-slate-300 shadow flex items-center gap-1">
           <span>◫</span>
           <span>MAP</span>
         </button>
 
-        <!-- Menu Button (Pause) -->
-        <button id="btn-menu" class="px-3.5 py-1 rounded-lg bg-slate-800 border border-cyan-500/50 active:scale-90 text-[10px] font-orbitron font-bold text-cyan-300 shadow flex items-center gap-1">
+        <button id="btn-menu" class="px-3.5 py-1 rounded-lg bg-slate-800 border border-slate-700 active:scale-90 text-[10px] font-orbitron font-bold text-slate-300 shadow flex items-center gap-1">
           <span>☰</span>
           <span>PAUSE</span>
         </button>
       </div>
 
-      <button id="fullscreen-btn" class="px-3 py-1.5 rounded-lg bg-cyan-950/90 border border-cyan-400 text-cyan-300 font-orbitron font-bold text-[10px] active:scale-95 shadow-[0_0_12px_rgba(0,240,255,0.35)] flex items-center gap-1 cursor-pointer">
+      <button id="fullscreen-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-orbitron font-bold text-[10px] active:scale-95 flex items-center gap-1 cursor-pointer shadow-sm">
         <span>⛶</span>
         <span>FULLSCREEN</span>
       </button>
@@ -256,12 +248,12 @@
 
     <!-- Rematch Modal on Phone -->
     <div id="mobile-rematch-modal"
-      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
       <div
-        class="bg-slate-900 border-2 border-cyan-400 p-6 rounded-3xl w-full max-w-xs text-center shadow-[0_0_40px_rgba(0,240,255,0.3)]">
-        <h2 id="mobile-winner-text" class="font-orbitron font-black text-3xl mb-4">🏆 VICTORY!</h2>
+        class="bg-slate-900 border border-slate-700 p-6 rounded-3xl w-full max-w-xs text-center shadow-2xl">
+        <h2 id="mobile-winner-text" class="font-orbitron font-black text-2xl text-slate-100 mb-4">🏆 VICTORY!</h2>
         <button id="mobile-rematch-btn"
-          class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-pink-500 font-orbitron font-bold text-sm tracking-wider text-white shadow-[0_0_20px_rgba(0,240,255,0.4)]">
+          class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-orbitron font-bold text-sm tracking-wider text-white shadow-md cursor-pointer active:scale-95 transition">
           READY FOR REMATCH 🔄
         </button>
       </div>

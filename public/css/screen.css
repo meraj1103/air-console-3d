@@ -1,11 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
-  --neon-cyan: #00f0ff;
-  --neon-pink: #ff007f;
-  --neon-yellow: #ffe600;
-  --neon-purple: #bf00ff;
-  --dark-bg: #050811;
+  --dark-bg: #0b0e15;
 }
 
 * {
@@ -28,90 +24,35 @@ h1, h2, h3, .font-orbitron {
   font-family: 'Orbitron', monospace;
 }
 
-/* Cyber Glassmorphism Card with Inset Rim Glow */
+/* Matte Arcade Glass Card */
 .cyber-card {
-  background: rgba(10, 16, 30, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-    0 24px 48px -12px rgba(0, 0, 0, 0.8),
-    0 0 35px rgba(0, 240, 255, 0.08);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 .cyber-card-p1 {
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 
-    inset 0 1px 0 0 rgba(0, 240, 255, 0.3),
-    0 20px 40px -10px rgba(0, 240, 255, 0.15);
+  border-color: #3b82f6;
+  background: rgba(30, 58, 138, 0.25);
 }
 
 .cyber-card-p2 {
-  border-color: rgba(255, 0, 127, 0.4);
-  box-shadow: 
-    inset 0 1px 0 0 rgba(255, 0, 127, 0.3),
-    0 20px 40px -10px rgba(255, 0, 127, 0.15);
+  border-color: #ef4444;
+  background: rgba(153, 27, 27, 0.25);
 }
 
-/* Neon Glow utilities */
-.glow-cyan {
-  text-shadow: 0 0 12px rgba(0, 240, 255, 0.8), 0 0 25px rgba(0, 240, 255, 0.4);
-}
-
-.glow-pink {
-  text-shadow: 0 0 12px rgba(255, 0, 127, 0.8), 0 0 25px rgba(255, 0, 127, 0.4);
-}
-
-.glow-box-cyan {
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.45);
-}
-
-.glow-box-pink {
-  box-shadow: 0 0 25px rgba(255, 0, 127, 0.45);
-}
-
-/* Cyber Button with angled clip-path */
+/* Crisp tactile button */
 .cyber-btn {
   position: relative;
-  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease-out;
 }
 
 .cyber-btn:hover {
-  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 .cyber-btn:active {
   transform: translateY(1px);
 }
-
-/* Scanline / CRT overlay */
-.scanline-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    rgba(18, 16, 38, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  ), linear-gradient(
-    90deg,
-    rgba(255, 0, 0, 0.03),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.03)
-  );
-  background-size: 100% 4px, 6px 100%;
-  z-index: 40;
-}
-
-/* Animated pulse rings */
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.05); opacity: 0.3; }
-  100% { transform: scale(0.95); opacity: 0.8; }
-}
-
-.pulse-ring {
-  animation: pulse-ring 3s infinite ease-in-out;
-}
-
