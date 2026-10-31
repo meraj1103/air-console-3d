@@ -5,6 +5,7 @@ import { TankGame } from './games/tankGame.js';
 import { GamepadMode } from './games/gamepadMode.js';
 import { SnesEmulator } from './games/snesEmulator.js';
 import { HotWheelsMode } from './games/hotWheelsMode.js';
+import { FighterGame } from './games/fighterGame.js';
 
 class AirConsoleHost {
   constructor() {
@@ -325,6 +326,9 @@ class AirConsoleHost {
     } else if (this.currentGameType === 'hotwheels') {
       if (titleEl) titleEl.textContent = '🏎️ HOT WHEELS UNLEASHED CONSOLE';
       this.activeGame = new HotWheelsMode(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
+    } else if (this.currentGameType === 'fighter') {
+      if (titleEl) titleEl.textContent = '⚔️ BLADE DUEL: SAMURAI SHOWDOWN 1v1';
+      this.activeGame = new FighterGame(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);
     } else if (this.currentGameType === 'snes') {
       if (titleEl) titleEl.textContent = '🕹️ SUPER FAMICOM / SNES CONSOLE (.SFC)';
       this.activeGame = new SnesEmulator(this.gameContainer, onScoreUpdate, onRoundEnd, syncCallback);

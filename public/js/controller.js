@@ -246,7 +246,21 @@ class MobileGamepad {
     const lL1 = document.getElementById('label-l1');
     const lR1 = document.getElementById('label-r1');
 
-    if (game === 'kart') {
+    this.currentGame = game;
+
+    if (game === 'fighter') {
+      // Fighting game: Disable gyro tilt completely, use only joystick/buttons!
+      this.gyroEnabled = false;
+      if (this.gyroToggleBtn) this.gyroToggleBtn.classList.add('hidden');
+      const gyroHud = document.getElementById('gyro-steering-hud');
+      if (gyroHud) gyroHud.classList.add('hidden');
+      if (lA) lA.textContent = 'SLASH';
+      if (lB) lB.textContent = 'JUMP';
+      if (lX) lX.textContent = 'SHURIKEN';
+      if (lY) lY.textContent = 'HEAVY';
+      if (lL1) lL1.textContent = 'DODGE';
+      if (lR1) lR1.textContent = 'SLASH';
+    } else if (game === 'kart') {
       if (lA) lA.textContent = 'ACCEL';
       if (lB) lB.textContent = 'BRAKE';
       if (lX) lX.textContent = 'ITEM';
@@ -654,8 +668,8 @@ class MobileGamepad {
   sendInput() {
     if (!this.isConnected) return;
     let effectiveX = this.input.x;
-    // When gyro is active and touch stick is neutral, steer with gyro!
-    if (this.gyroEnabled && Math.abs(effectiveX) < 0.1) {
+    // When gyro is active and touch stick is neutral, steer with gyro! (Never in fighting game)
+    if (this.gyroEnabled && this.currentGame !== 'fighter' && Math.abs(effectiveX) < 0.1) {
       effectiveX = this.gyroNormalizedSteer;
     }
 
